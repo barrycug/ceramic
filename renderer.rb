@@ -50,20 +50,12 @@ END
     def line_query_arguments(tile)
       return [<<-END, [tile.bbox[0], tile.bbox[1], tile.bbox[2], tile.bbox[3], -tile.left, -tile.top, @granularity / tile.width, @granularity / tile.height]]
 select
-  ST_AsGeoJSON(ST_TransScale(ST_Intersection(way, ST_MakeEnvelope($1, $2, $3, $4, 900913)), $5, $6, $7, $8)) as way, osm_id, highway, name
-from (
-  select
-    (ST_Dump(ST_Multi(ST_SimplifyPreserveTopology(ST_LineMerge(way), 1)))).geom as way, osm_id, highway, name
-  from (
-    select
-      ST_Union(way) as way, osm_id, highway, name
-    from
-      planet_osm_line
-    where
-      way && ST_MakeEnvelope($1, $2, $3, $4, 900913)
-    group by osm_id, highway, name
-  ) as q
-) as q
+  ST_AsGeoJSON(ST_TransScale(ST_Intersection(way, ST_MakeEnvelope($1, $2, $3, $4, 900913)), $5, $6, $7, $8)) as way,
+  osm_id, highway, name
+from
+  planet_osm_line
+where
+  way && ST_MakeEnvelope($1, $2, $3, $4, 900913)
 END
     end
     

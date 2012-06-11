@@ -1,0 +1,236 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Map</title>
+    <link rel="stylesheet" href="leaflet/leaflet.css">
+    <style>
+      
+      #map {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+      
+    </style>
+  </head>
+  <body>
+    
+    <div id="map"></div>
+    
+    <script src="leaflet/leaflet.js"></script>
+    <script>
+      
+      var map = new L.Map("map", {
+        center: new L.LatLng(37.47854, -122.44836),
+        zoom: 15
+      });
+      
+      
+      // Mapnik underlay
+      
+      var mapnik = new L.TileLayer("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
+      
+      map.addLayer(mapnik);
+      
+      
+      // Some simple canvas tiles
+      
+      var canvases = {};
+      
+      function tilePath(z, x, y) {
+        
+        return "/" + z + "/" + x + "/" + y;
+        
+      }
+      
+      function loadTile(canvas, z, x, y) {
+        
+        // draw "loading" overlay
+        
+        var context = canvas.getContext("2d");
+        
+        context.fillStyle = "rgba(255, 255, 255, 0.5)";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // load a script tag
+        
+        var path = tilePath(z, x, y);
+        
+        canvases[path] = canvas;
+        
+        var script = document.createElement("script");
+        script.src = path;
+        
+        document.body.appendChild(script);
+        
+      }
+      
+      // Tile data was loaded. Draw the tile and set up an
+      // event listener on the canvas to dump the tile's
+      // data on alt-click.
+      
+      function tileData(data, z, x, y) {
+        
+        var path = tilePath(z, x, y);
+        var canvas = canvases[path];
+        
+        if (canvas) {
+          
+          renderTile(canvases[path], data);
+          
+          canvas.addEventListener("mousedown", function(e) {
+          
+            if (e.altKey)
+              console.log(data, z, x, y);
+          
+          });
+          
+        }
+        
+      }
+      
+      function renderPoint(context, feature, scale) {
+        
+        context.beginPath();
+        
+        context.arc(feature.coordinates[0], feature.coordinates[1], 2 / scale, 0, Math.PI * 2);
+            
+        context.fillStyle = "rgba(0, 0, 0, 0.5)";
+        context.fill();
+        
+      }
+      
+      function renderLineString(context, feature, scale) {
+        
+        var i;
+        
+        // draw the line
+      
+        context.beginPath();
+        
+        context.moveTo(feature.coordinates[0][0], feature.coordinates[0][1]);
+        
+        for (i = 1; i < feature.coordinates.length; i++) {
+          context.lineTo(feature.coordinates[i][0], feature.coordinates[i][1]);
+        }
+          
+        context.strokeStyle = "hsla(" + feature.properties.osm_id + ", 90%, 50%, 0.5)";
+        context.stroke();
+        
+        // draw points
+        
+        context.beginPath();
+        
+        for (i = 0; i < feature.coordinates.length; i++) {
+          context.moveTo(feature.coordinates[i][0] + 2 / scale, feature.coordinates[i][1])
+          context.arc(feature.coordinates[i][0], feature.coordinates[i][1], 1 / scale, 0, Math.PI * 2);
+        }
+        
+        context.fillStyle = "#f00";
+        context.fill();
+        
+      }
+      
+      function renderMultiLineString(context, feature, scale) {
+        
+        for (i = 0; i < feature.coordinates.length; i++)
+          renderLineString(context, { coordinates: feature.coordinates[i], properties: feature.properties }, scale);
+        
+      }
+      
+      function renderPolygon(context, feature, scale) {
+        
+        // draw shape
+        
+        context.beginPath();
+        
+        for (i = 0; i < feature.coordinates.length; i++) {
+        
+          context.moveTo(feature.coordinates[i][0][0], feature.coordinates[i][0][1]);
+        
+          for (j = 1; j < feature.coordinates[i].length; j++)
+            context.lineTo(feature.coordinates[i][j][0], feature.coordinates[i][j][1]);
+          
+        }
+        
+        context.fillStyle = "rgba(0, 0, 255, 0.2)";
+        context.fill();
+        
+        // draw points
+        
+        context.beginPath();
+        
+        for (i = 0; i < feature.coordinates.length; i++) {
+          for (j = 1; j < feature.coordinates[i].length; j++) {
+            context.moveTo(feature.coordinates[i][j][0] + 0.5, feature.coordinates[i][j][1])
+            context.arc(feature.coordinates[i][j][0], feature.coordinates[i][j][1], 0.5, 0, Math.PI * 2);
+          }
+        }
+        
+        context.fillStyle = "#f00";
+        context.fill();
+        
+      }
+      
+      function renderTile(canvas, data) {
+        
+        var context = canvas.getContext("2d");
+        var scale = canvas.width / data.granularity;
+        
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw an outline around the tile
+        
+        context.lineWidth = 1;
+        
+        context.strokeStyle = "rgba(255, 255, 255, 0.5)";
+        context.strokeRect(0.5, 0.5, canvas.width, canvas.height);
+        
+        // Set scale for features
+        
+        context.save();
+        context.scale(scale, scale);
+        
+        context.lineWidth = 2 / scale;
+        
+        // Iterate over features
+        
+        data.features.forEach(function(feature) {
+          
+          // Render feature, logging if we don't know how to render it
+          
+          if (feature.type === "Point") {
+            renderPoint(context, feature, scale);
+          } else if (feature.type === "LineString") {
+            renderLineString(context, feature, scale);
+          } else if (feature.type === "MultiLineString") {
+            renderMultiLineString(context, feature, scale);
+          } else {
+            console.log(feature.type, feature);
+          }
+          
+        });
+        
+        // Restore context (is canvas reused?)
+        
+        context.restore();
+        
+      }
+      
+      var canvasTiles = new L.TileLayer.Canvas();
+
+      canvasTiles.drawTile = function(canvas, tilePoint, zoom) {
+        
+        loadTile(canvas, zoom, tilePoint.x, tilePoint.y);
+        
+      }
+      
+      map.addLayer(canvasTiles);
+      
+    </script>
+    
+  </body>
+</html>

@@ -18,8 +18,9 @@ class Renderer
       "features" => []
     }
     
-    result["features"] += find_features(point_query_arguments(tile))
+    result["features"] += find_features(polygon_query_arguments(tile))
     result["features"] += find_features(line_query_arguments(tile))
+    result["features"] += find_features(point_query_arguments(tile))
     
     json = JSON.dump(result)
     
@@ -50,10 +51,40 @@ END
     def line_query_arguments(tile)
       return [<<-END, [tile.bbox[0], tile.bbox[1], tile.bbox[2], tile.bbox[3], -tile.left, -tile.top, @granularity / tile.width, @granularity / tile.height]]
 select
-  ST_AsGeoJSON(ST_TransScale(ST_Intersection(way, ST_MakeEnvelope($1, $2, $3, $4, 900913)), $5, $6, $7, $8)) as way,
+  ST_AsGeoJSON(
+    ST_TransScale(
+      ST_Intersection(
+        way,
+        ST_MakeEnvelope($1, $2, $3, $4, 900913)
+      ),
+      $5, $6, $7, $8
+    )
+  ) as way,
   osm_id, highway, name
 from
   planet_osm_line
+where
+  way && ST_MakeEnvelope($1, $2, $3, $4, 900913)
+END
+    end
+    
+    def polygon_query_arguments(tile)
+      return [<<-END, [tile.bbox[0], tile.bbox[1], tile.bbox[2], tile.bbox[3], -tile.left, -tile.top, @granularity / tile.width, @granularity / tile.height]]
+select
+  ST_AsGeoJSON(
+    ST_TransScale(
+      ST_ForceRHR(
+        ST_Intersection(
+          ST_Buffer(way, 0.0),
+          ST_MakeEnvelope($1, $2, $3, $4, 900913)
+        )
+      ),
+      $5, $6, $7, $8
+    )
+  ) as way,
+  osm_id, highway, name
+from
+  planet_osm_polygon
 where
   way && ST_MakeEnvelope($1, $2, $3, $4, 900913)
 END
@@ -79,12 +110,6 @@ END
     def feature_from_result_row(row)
       
       feature = JSON.parse(row["way"])
-      
-      # Filter out GeometryCollection features
-      
-      if feature["type"] == "GeometryCollection"
-        return nil
-      end
       
       # Round coordinates to integer values
       

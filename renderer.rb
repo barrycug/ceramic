@@ -8,6 +8,7 @@ class Renderer
     @connection = options[:connection]
     @granularity = options[:granularity]
     @callback = options[:callback]
+    @columns = options[:columns]
     
   end
   
@@ -34,13 +35,16 @@ class Renderer
   
   protected
   
-    # Prepare a query for finding points within the tile (arguments
+    # "Prepare" a query for finding points within the tile (arguments
     # will be given to the PG::Connection#exec method).
+    #
+    # Note that column names are not sanitized...
   
     def point_query_arguments(tile)
       return [<<-END, [-tile.left, -tile.top, @granularity / tile.width, @granularity / tile.height, tile.bbox[0], tile.bbox[1], tile.bbox[2], tile.bbox[3]]]
 select
-  ST_AsGeoJSON(ST_TransScale(way, $1, $2, $3, $4)) as way, osm_id, highway, name
+  ST_AsGeoJSON(ST_TransScale(way, $1, $2, $3, $4)) as way
+  #{(@columns[:point] ? "," : "") + @columns[:point].map { |c| "\"#{c}\"" }.join(", ")}
 from
   planet_osm_point
 where
@@ -59,8 +63,8 @@ select
       ),
       $5, $6, $7, $8
     )
-  ) as way,
-  osm_id, highway, name
+  ) as way
+  #{(@columns[:line] ? "," : "") + @columns[:line].map { |c| "\"#{c}\"" }.join(", ")}
 from
   planet_osm_line
 where
@@ -81,8 +85,8 @@ select
       ),
       $5, $6, $7, $8
     )
-  ) as way,
-  osm_id, highway, name
+  ) as way
+  #{(@columns[:polygon] ? "," : "") + @columns[:polygon].map { |c| "\"#{c}\"" }.join(", ")}
 from
   planet_osm_polygon
 where
@@ -111,6 +115,10 @@ END
       
       feature = JSON.parse(row["way"])
       
+      if feature["type"] == "GeometryCollection"
+        return nil
+      end
+      
       # Round coordinates to integer values
       
       feature["coordinates"] = round_coordinates(feature["coordinates"])
@@ -120,9 +128,11 @@ END
       feature["properties"] = {}
       
       row.each_pair do |key, value|
+        
         if key != "way" && value
           feature["properties"][key] = value
         end
+        
       end
       
       feature

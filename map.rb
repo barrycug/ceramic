@@ -9,7 +9,12 @@ CONNECTION = PG.connect(dbname: "gis")
 RENDERER = Renderer.new({
   connection: CONNECTION,
   granularity: 1000,
-  callback: "tileData"
+  callback: "tileData",
+  columns: {
+    point: ["osm_id"],
+    line: ["osm_id"],
+    polygon: ["osm_id"]
+  }
 })
 
 def make_tile(z, x, y)

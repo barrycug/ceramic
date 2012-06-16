@@ -4,7 +4,7 @@ require "pg"
 require "#{File.dirname(__FILE__)}/tile"
 require "#{File.dirname(__FILE__)}/renderer"
 
-CONNECTION = PG.connect(dbname: "gis")
+CONNECTION = PG.connect(dbname: "california")
 
 RENDERER = Renderer.new({
   connection: CONNECTION,

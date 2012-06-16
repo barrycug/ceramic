@@ -2,6 +2,16 @@ class Tile
   
   attr_reader :z, :x, :y
   
+  def self.from_index(index)
+    parts = index.split("/").map { |p| p.to_i }
+    
+    if parts.size != 3
+      raise ArgumentError.new("index must look like z/x/y")
+    end
+    
+    self.new(*parts)
+  end
+  
   def initialize(z, x, y)
     @z, @x, @y = z, x, y
   end

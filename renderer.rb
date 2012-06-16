@@ -43,7 +43,7 @@ class Renderer
     def point_query_arguments(tile)
       return [<<-END, [-tile.left, -tile.top, @granularity / tile.width, @granularity / tile.height, tile.bbox[0], tile.bbox[1], tile.bbox[2], tile.bbox[3]]]
 select
-  ST_AsGeoJSON(ST_TransScale(way, $1, $2, $3, $4)) as way
+  ST_AsGeoJSON(ST_TransScale(way, $1, $2, $3, $4), 0) as way
   #{(@columns[:point] ? "," : "") + @columns[:point].map { |c| "\"#{c}\"" }.join(", ")}
 from
   planet_osm_point
@@ -62,7 +62,8 @@ select
         ST_MakeEnvelope($1, $2, $3, $4, 900913)
       ),
       $5, $6, $7, $8
-    )
+    ),
+    0
   ) as way
   #{(@columns[:line] ? "," : "") + @columns[:line].map { |c| "\"#{c}\"" }.join(", ")}
 from
@@ -84,7 +85,8 @@ select
         )
       ),
       $5, $6, $7, $8
-    )
+    ),
+    0
   ) as way
   #{(@columns[:polygon] ? "," : "") + @columns[:polygon].map { |c| "\"#{c}\"" }.join(", ")}
 from
@@ -92,18 +94,6 @@ from
 where
   way && ST_MakeEnvelope($1, $2, $3, $4, 900913)
 END
-    end
-    
-    # Round coordinates (possibly multidimensional)
-    
-    def round_coordinates(coordinates)
-      
-      if coordinates.is_a?(Array)
-        coordinates.map { |c| round_coordinates(c) }
-      else
-        coordinates.to_i
-      end
-      
     end
     
     # Produce the feature's hash, which will eventually be sent to
@@ -118,10 +108,6 @@ END
       if feature["type"] == "GeometryCollection"
         return nil
       end
-      
-      # Round coordinates to integer values
-      
-      feature["coordinates"] = round_coordinates(feature["coordinates"])
       
       # Copy columns as properties if present
       

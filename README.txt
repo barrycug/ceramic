@@ -3,22 +3,27 @@ render-data-tile
 
 For rendering data tiles from a PostGIS database imported with osm2pgsql.
 
-On the command line:
+To render a single tile to standard output:
 
-  $ ruby maketile.rb {z} {x} {y}
+  $ ruby maketile.rb --tile=<z>/<x>/<y> \
+                     --config=everything.yml \
+                     --database=gis
 
-To start the web interface, which allows you to debug tile contents by viewing them overlaid on Mapnik tiles:
+To render a list of tile indices (one per line):
 
-  $ ruby map.rb
+  $ ruby maketile.rb --tiles=indices.txt \
+                     --config=everything.yml \
+                     --database=gis \
+                     --output=./tiles/%z/%x/%y.js
 
+To start the web interface (in the debug directory), which allows you to debug tile contents by viewing them overlaid on Mapnik tiles:
 
-Notes
------
+  $ DATABASE=gis ruby debug.rb
 
-Alt- or option-click a tile in the web interface to dump its contents to the JavaScript console.
+In the web interface, option- or alt-click any tile to dump its contents to the JavaScript console.
 
-The database name is hard-coded to "gis", and the start point of the map is hard-coded to the SF bay area.
+To specify a start point for the web interface, use the ZOOM and CENTER environment variables, for example:
 
-The tile renderer is based on the following script, which is part of the Kothic project:
-
-  http://code.google.com/p/kothic/source/browse/src/json_getter.py
+  $ DATABASE=gis ZOOM=13 CENTER=37.48,-122.44 debug.rb
+  
+Otherwise, default values will be used.

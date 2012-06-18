@@ -60,7 +60,7 @@ class Tile
     # From the OSM wiki
   
     def tile_to_lon(x, z)
-      lon_deg = x.to_f / (2 ** z.to_f) * 360.0 - 180.0
+      x.to_f / (2 ** z.to_f) * 360.0 - 180.0
     end
 
     def tile_to_lat(y, z)

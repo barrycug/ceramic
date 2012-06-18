@@ -24,8 +24,8 @@
     <script>
       
       var map = new L.Map("map", {
-        center: new L.LatLng(37.47854, -122.44836),
-        zoom: 15
+        center: new L.LatLng(<%= LAT %>, <%= LNG %>),
+        zoom: <%= ZOOM %>
       });
       
       
@@ -155,11 +155,8 @@
         
           context.moveTo(feature.coordinates[i][0][0], feature.coordinates[i][0][1]);
           
-          for (j = 0; j < feature.coordinates[i].length; j++) {
-        
+          for (j = 0; j < feature.coordinates[i].length; j++)
             context.lineTo(feature.coordinates[i][j][0], feature.coordinates[i][j][1]);
-          
-          }
           
         }
         

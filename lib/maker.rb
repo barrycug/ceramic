@@ -1,32 +1,53 @@
 require "rubygems"
 require "json"
 
-class Renderer
+class Maker
   
-  def initialize(options = {})
+  def initialize(connection, config)
+    @connection = connection
+    @config = config
+  end
+  
+  def write_tile(tile, path)
     
-    @connection = options[:connection]
-    @granularity = options[:granularity]
-    @callback = options[:callback]
-    @columns = options[:columns]
+    result = render_tile(tile)
+    
+    if path == "-"
+      puts result
+    else
+      formatted_path = path.gsub("%z", tile.z.to_s).gsub("%x", tile.x.to_s).gsub("%y", tile.y.to_s)
+      FileUtils.mkdir_p(File.dirname(formatted_path))
+      File.open(formatted_path, "w+") { |f| f << result }
+    end
     
   end
   
-  def render(tile)
+  def render_tile(tile)
     
     result = {
-      "granularity" => @granularity,
+      "granularity" => @config["granularity"] || 1000,
       "features" => []
     }
     
-    result["features"] += find_features(polygon_query_arguments(tile))
-    result["features"] += find_features(line_query_arguments(tile))
-    result["features"] += find_features(point_query_arguments(tile))
+    @config["tables"].each do |table|
+      
+      arguments = case table["geometry"]
+      when "point"
+        point_query_arguments(tile, :columns => table["columns"])
+      when "line"
+        line_query_arguments(tile, :columns => table["columns"])
+      when "polygon"
+        polygon_query_arguments(tile, :columns => table["columns"])
+      end
+      
+      result["features"] += find_features(arguments)
+      
+    end
     
     json = JSON.dump(result)
     
-    if @callback
-      "#{@callback}(#{json}, #{tile.z}, #{tile.x}, #{tile.y})"
+    if @config["callback"]
+      "#{@config["callback"]}(#{json}, #{tile.z}, #{tile.x}, #{tile.y})"
     else
       json
     end
@@ -37,14 +58,12 @@ class Renderer
   
     # "Prepare" a query for finding points within the tile (arguments
     # will be given to the PG::Connection#exec method).
-    #
-    # Note that column names are not sanitized...
   
-    def point_query_arguments(tile)
-      return [<<-END, [-tile.left, -tile.top, @granularity / tile.width, @granularity / tile.height, tile.bbox[0], tile.bbox[1], tile.bbox[2], tile.bbox[3]]]
+    def point_query_arguments(tile, options = {})
+      return [<<-END, [-tile.left, -tile.top, @config["granularity"].to_f / tile.width, @config["granularity"].to_f / tile.height, tile.bbox[0], tile.bbox[1], tile.bbox[2], tile.bbox[3]]]
 select
   ST_AsGeoJSON(ST_TransScale(way, $1, $2, $3, $4), 0) as way
-  #{(@columns[:point] ? "," : "") + @columns[:point].map { |c| "\"#{c}\"" }.join(", ")}
+  #{(options[:columns] ? "," : "") + options[:columns].map { |c| @connection.quote_ident(c) }.join(", ")}
 from
   planet_osm_point
 where
@@ -52,8 +71,8 @@ where
 END
     end
     
-    def line_query_arguments(tile)
-      return [<<-END, [tile.bbox[0], tile.bbox[1], tile.bbox[2], tile.bbox[3], -tile.left, -tile.top, @granularity / tile.width, @granularity / tile.height]]
+    def line_query_arguments(tile, options = {})
+      return [<<-END, [tile.bbox[0], tile.bbox[1], tile.bbox[2], tile.bbox[3], -tile.left, -tile.top, @config["granularity"].to_f / tile.width, @config["granularity"].to_f / tile.height]]
 select
   ST_AsGeoJSON(
     ST_TransScale(
@@ -65,7 +84,7 @@ select
     ),
     0
   ) as way
-  #{(@columns[:line] ? "," : "") + @columns[:line].map { |c| "\"#{c}\"" }.join(", ")}
+  #{(options[:columns] ? "," : "") + options[:columns].map { |c| @connection.quote_ident(c) }.join(", ")}
 from
   planet_osm_line
 where
@@ -73,8 +92,8 @@ where
 END
     end
     
-    def polygon_query_arguments(tile)
-      return [<<-END, [tile.bbox[0], tile.bbox[1], tile.bbox[2], tile.bbox[3], -tile.left, -tile.top, @granularity / tile.width, @granularity / tile.height]]
+    def polygon_query_arguments(tile, options = {})
+      return [<<-END, [tile.bbox[0], tile.bbox[1], tile.bbox[2], tile.bbox[3], -tile.left, -tile.top, @config["granularity"].to_f / tile.width, @config["granularity"].to_f / tile.height]]
 select
   ST_AsGeoJSON(
     ST_TransScale(
@@ -88,7 +107,7 @@ select
     ),
     0
   ) as way
-  #{(@columns[:polygon] ? "," : "") + @columns[:polygon].map { |c| "\"#{c}\"" }.join(", ")}
+  #{(options[:columns] ? "," : "") + options[:columns].map { |c| @connection.quote_ident(c) }.join(", ")}
 from
   planet_osm_polygon
 where

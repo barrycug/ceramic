@@ -1,12 +1,12 @@
 granularity: 256
 callback: tileData
 tables:
-  - name: planet_osm_point
-    geometry: point
+  - name: planet_osm_polygon
+    geometry: polygon
     columns: ["osm_id"]
   - name: planet_osm_line
     geometry: line
     columns: ["osm_id"]
-  - name: planet_osm_polygon
-    geometry: polygon
+  - name: planet_osm_point
+    geometry: point
     columns: ["osm_id"]

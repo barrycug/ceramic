@@ -25,6 +25,7 @@ class Maker
   def render_tile(tile)
     
     result = {
+      "type" => "FeatureCollection",
       "granularity" => @config["granularity"] || 1000,
       "features" => []
     }
@@ -122,9 +123,13 @@ END
     
     def feature_from_result_row(row)
       
-      feature = JSON.parse(row["way"])
+      feature = {
+        "type" => "Feature"
+      }
       
-      if feature["type"] == "GeometryCollection"
+      feature["geometry"] = JSON.parse(row["way"])
+      
+      if feature["geometry"]["type"] == "GeometryCollection"
         return nil
       end
       

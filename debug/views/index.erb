@@ -92,18 +92,18 @@
         
       }
       
-      function renderPoint(context, feature, scale) {
+      function renderPoint(context, coordinates, hue, scale) {
         
         context.beginPath();
         
-        context.arc(feature.coordinates[0], feature.coordinates[1], 3 / scale, 0, Math.PI * 2);
+        context.arc(coordinates[0], coordinates[1], 3 / scale, 0, Math.PI * 2);
             
-        context.fillStyle = "hsla(" + feature.properties.osm_id + ", 100%, 50%, 0.8)";
+        context.fillStyle = "hsla(" + hue + ", 100%, 50%, 0.8)";
         context.fill();
         
       }
       
-      function renderLineString(context, feature, scale) {
+      function renderLineString(context, coordinates, hue, scale) {
         
         var i;
         
@@ -111,22 +111,22 @@
       
         context.beginPath();
         
-        context.moveTo(feature.coordinates[0][0], feature.coordinates[0][1]);
+        context.moveTo(coordinates[0][0], coordinates[0][1]);
         
-        for (i = 1; i < feature.coordinates.length; i++) {
-          context.lineTo(feature.coordinates[i][0], feature.coordinates[i][1]);
+        for (i = 1; i < coordinates.length; i++) {
+          context.lineTo(coordinates[i][0], coordinates[i][1]);
         }
           
-        context.strokeStyle = "hsla(" + feature.properties.osm_id + ", 90%, 50%, 0.5)";
+        context.strokeStyle = "hsla(" + hue + ", 90%, 50%, 0.5)";
         context.stroke();
         
         // draw points
         
         context.beginPath();
         
-        for (i = 0; i < feature.coordinates.length; i++) {
-          context.moveTo(feature.coordinates[i][0] + 2 / scale, feature.coordinates[i][1])
-          context.arc(feature.coordinates[i][0], feature.coordinates[i][1], 1 / scale, 0, Math.PI * 2);
+        for (i = 0; i < coordinates.length; i++) {
+          context.moveTo(coordinates[i][0] + 2 / scale, coordinates[i][1])
+          context.arc(coordinates[i][0], coordinates[i][1], 1 / scale, 0, Math.PI * 2);
         }
         
         context.fillStyle = "#f00";
@@ -134,16 +134,16 @@
         
       }
       
-      function renderMultiLineString(context, feature, scale) {
+      function renderMultiLineString(context, coordinates, hue, scale) {
         
         var i;
         
-        for (i = 0; i < feature.coordinates.length; i++)
-          renderLineString(context, { coordinates: feature.coordinates[i], properties: feature.properties }, scale);
+        for (i = 0; i < coordinates.length; i++)
+          renderLineString(context, coordinates[i], hue, scale);
         
       }
       
-      function renderPolygon(context, feature, scale) {
+      function renderPolygon(context, coordinates, hue, scale) {
         
         var i, j, k;
         
@@ -151,30 +151,30 @@
         
         context.beginPath();
         
-        for (i = 0; i < feature.coordinates.length; i++) {
+        for (i = 0; i < coordinates.length; i++) {
         
-          context.moveTo(feature.coordinates[i][0][0], feature.coordinates[i][0][1]);
+          context.moveTo(coordinates[i][0][0], coordinates[i][0][1]);
           
-          for (j = 0; j < feature.coordinates[i].length; j++)
-            context.lineTo(feature.coordinates[i][j][0], feature.coordinates[i][j][1]);
+          for (j = 0; j < coordinates[i].length; j++)
+            context.lineTo(coordinates[i][j][0], coordinates[i][j][1]);
           
         }
         
-        context.fillStyle = "hsla(" + feature.properties.osm_id + ", 90%, 50%, 0.4)";
+        context.fillStyle = "hsla(" + hue + ", 90%, 50%, 0.4)";
         context.fill();
         
-        context.strokeStyle = "hsla(" + feature.properties.osm_id + ", 90%, 50%, 0.5)";
+        context.strokeStyle = "hsla(" + hue + ", 90%, 50%, 0.5)";
         context.stroke();
         
         // draw points
         
         context.beginPath();
         
-        for (i = 0; i < feature.coordinates.length; i++) {
+        for (i = 0; i < coordinates.length; i++) {
         
-          for (j = 0; j < feature.coordinates[i].length; j++) {
-            context.moveTo(feature.coordinates[i][j][0] + 2 / scale, feature.coordinates[i][j][1])
-            context.arc(feature.coordinates[i][j][0], feature.coordinates[i][j][1], 1 / scale, 0, Math.PI * 2);
+          for (j = 0; j < coordinates[i].length; j++) {
+            context.moveTo(coordinates[i][j][0] + 2 / scale, coordinates[i][j][1])
+            context.arc(coordinates[i][j][0], coordinates[i][j][1], 1 / scale, 0, Math.PI * 2);
           }
           
         }
@@ -184,12 +184,12 @@
         
       }
       
-      function renderMultiPolygon(context, feature, scale) {
+      function renderMultiPolygon(context, coordinates, hue, scale) {
         
         var i;
         
-        for (i = 0; i < feature.coordinates.length; i++)
-          renderPolygon(context, { coordinates: feature.coordinates[i], properties: feature.properties }, scale);
+        for (i = 0; i < coordinates.length; i++)
+          renderPolygon(context, coordinates[i], hue, scale);
         
       }
       
@@ -220,17 +220,20 @@
           
           // Render feature
           
-          if (feature.type === "Point") {
-            renderPoint(context, feature, scale);
-          } else if (feature.type === "LineString") {
-            renderLineString(context, feature, scale);
-          } else if (feature.type === "MultiLineString") {
-            renderMultiLineString(context, feature, scale);
-          } else if (feature.type === "Polygon") {
-            renderPolygon(context, feature, scale);
-          } else if (feature.type === "MultiPolygon") {
-            renderMultiPolygon(context, feature, scale);
-          }
+          var render;
+          
+          if (feature.geometry.type === "Point")
+            render = renderPoint;
+          else if (feature.geometry.type === "LineString")
+            render = renderLineString;
+          else if (feature.geometry.type === "MultiLineString")
+            render = renderMultiLineString;
+          else if (feature.geometry.type === "Polygon")
+            render = renderPolygon;
+          else if (feature.geometry.type === "MultiPolygon")
+            render = renderMultiPolygon;
+          
+          render(context, feature.geometry.coordinates, feature.properties.osm_id, scale);
           
         });
         

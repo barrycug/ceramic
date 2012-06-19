@@ -7,6 +7,8 @@ class Cover
     @connection = connection
     @renderer = renderer
   end
+  
+  # Render a single tile specified by the index
 
   def render_tile(index)
   
@@ -21,6 +23,11 @@ class Cover
     end
   
   end
+  
+  # Call render_tile and use the result to write to a path given
+  # by the path specification and the index. The path specification
+  # may have %z, %x, and %y placeholders. Directories will be created
+  # by FileUtils.mkdir_p.
 
   def write_output(index, path)
     

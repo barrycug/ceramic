@@ -5,6 +5,8 @@ class QueryBuilder
     @connection = connection
   end
   
+  # Output an array of query argument arrays for the given tile index (and configuration)
+  
   def queries(index)
     
     result = []

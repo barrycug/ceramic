@@ -6,6 +6,13 @@ class Renderer
     @config = config
   end
   
+  # Return output, given an index and a block which collects "rows",
+  # as would be returned from the database. Rows must be a hash with
+  # a GeoJSON "geometry" member.
+  #
+  # This routine yields an object which will respond to the "<<" method
+  # to collect rows, but the object will not necessarily be an array.
+  
   def output(index, &block)
     
     rows = []

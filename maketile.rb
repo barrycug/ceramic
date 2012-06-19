@@ -1,27 +1,11 @@
 require "rubygems"
 require "pg"
-require "fileutils"
 require "yaml"
-require "#{File.dirname(__FILE__)}/lib/tile"
-require "#{File.dirname(__FILE__)}/lib/maker"
+require "#{File.dirname(__FILE__)}/lib/cover"
+require "#{File.dirname(__FILE__)}/lib/tile_index"
+require "#{File.dirname(__FILE__)}/lib/query_builder"
+require "#{File.dirname(__FILE__)}/lib/renderer"
 require "#{File.dirname(__FILE__)}/vendor/trollop"
-
-def make_tile(tile, maker, output_path)
-  
-  if output_path == "-"
-    puts maker.render(tile)
-  else
-    formatted = output_path.gsub("%z", tile.z.to_s).gsub("%x", tile.x.to_s).gsub("%y", tile.y.to_s)
-    
-    puts "writing output to #{formatted}"
-    FileUtils.mkdir_p(File.dirname(formatted))
-    File.open(formatted, "w+") do |f|
-      f << renderer.render(tile)
-    end
-  end
-  
-end
-
 
 options = Trollop::options do
   opt :output, "Output path", :type => :string, :default => "-"
@@ -35,13 +19,17 @@ if options[:tile] == nil && options[:tiles] == nil
   Trollop::die "must specify either a tile index with --tile or a path to file containing tile indices with --tiles"
 end
 
-connection = PG.connect(dbname: options[:database])
 config = YAML.load(File.read(options[:config]))
-maker = Maker.new(connection, config)
+connection = PG.connect(:dbname => options[:database])
+query_builder = QueryBuilder.new(config, connection)
+renderer = Renderer.new(config)
+
+cover = Cover.new(query_builder, connection, renderer)
 
 if options[:tile]
   
-  maker.write_tile(Tile.from_index(options[:tile]), options[:output])
+  index = TileIndex.from_str(options[:tile])
+  cover.write_output(index, options[:output])
   
 elsif options[:tiles]
   
@@ -49,7 +37,8 @@ elsif options[:tiles]
     f.each_line do |line|
       if line =~ /\d+\/\d+\/\d+/
         puts "writing tile #{line}"
-        maker.write_tile(Tile.from_index(line), options[:output])
+        index = TileIndex.from_str(options[:tile])
+        cover.write_output(index, options[:output])
       end
     end
   end

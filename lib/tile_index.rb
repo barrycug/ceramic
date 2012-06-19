@@ -1,8 +1,8 @@
-class Tile
+class TileIndex
   
   attr_reader :z, :x, :y
   
-  def self.from_index(index)
+  def self.from_str(index)
     parts = index.split("/").map { |p| p.to_i }
     
     if parts.size != 3

@@ -26,4 +26,4 @@ To specify a start point for the web interface, use the ZOOM and CENTER environm
 
   $ DATABASE=gis ZOOM=13 CENTER=37.48,-122.44 debug.rb
   
-Otherwise, default values will be used.
+Otherwise, default values (above) will be used.

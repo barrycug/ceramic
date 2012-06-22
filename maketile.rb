@@ -21,10 +21,7 @@ end
 
 config = YAML.load(File.read(options[:config]))
 connection = PG.connect(:dbname => options[:database])
-query_builder = QueryBuilder.new(config, connection)
-renderer = Renderer.new(config)
-
-cover = Cover.new(query_builder, connection, renderer)
+cover = Cover.new(config, connection)
 
 if options[:tile]
   
@@ -37,7 +34,7 @@ elsif options[:tiles]
     f.each_line do |line|
       if line =~ /\d+\/\d+\/\d+/
         puts "writing tile #{line}"
-        index = TileIndex.from_str(options[:tile])
+        index = TileIndex.from_str(line)
         cover.write_output(index, options[:output])
       end
     end

@@ -2,10 +2,10 @@ require "fileutils"
 
 class Cover
   
-  def initialize(query_builder, connection, renderer)
-    @query_builder = query_builder
+  def initialize(config, connection)
+    @query_builder = QueryBuilder.new(config, connection)
     @connection = connection
-    @renderer = renderer
+    @renderer = Renderer.new(config)
   end
   
   # Render a single tile specified by the index

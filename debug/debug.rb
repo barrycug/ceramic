@@ -28,10 +28,7 @@ end
 
 CONFIG = YAML.load(File.read("./config.yml"))
 CONNECTION = PG.connect(:dbname => ENV["DATABASE"])
-QUERY_BUILDER = QueryBuilder.new(CONFIG, CONNECTION)
-RENDERER = Renderer.new(CONFIG)
-
-COVER = Cover.new(QUERY_BUILDER, CONNECTION, RENDERER)
+COVER = Cover.new(CONFIG, CONNECTION)
 
 def make_tile(z, x, y)
   time = Time.now

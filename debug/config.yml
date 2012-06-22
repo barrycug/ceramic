@@ -1,6 +1,8 @@
 granularity: 256
 callback: tileData
 tables:
+  - name: coastlines
+    geometry: coastline
   - name: planet_osm_polygon
     geometry: polygon
     columns: ["osm_id"]

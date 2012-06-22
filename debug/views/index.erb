@@ -233,7 +233,10 @@
           else if (feature.geometry.type === "MultiPolygon")
             render = renderMultiPolygon;
           
-          render(context, feature.geometry.coordinates, feature.properties.osm_id, scale);
+          if (feature.properties.natural == "coastline")
+            render(context, feature.geometry.coordinates, 45, scale);
+          else
+            render(context, feature.geometry.coordinates, feature.properties.osm_id, scale);
           
         });
         

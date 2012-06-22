@@ -20,6 +20,8 @@ class QueryBuilder
         result << line_query_arguments(index, :columns => table["columns"], :table => table["name"])
       when "polygon"
         result << polygon_query_arguments(index, :columns => table["columns"], :table => table["name"])
+      when "coastline"
+        result << coastline_query_arguments(index, :table => table["name"])
       end
       
     end
@@ -86,6 +88,29 @@ from
   #{@connection.quote_ident(options[:table])}
 where
   way && ST_MakeEnvelope($1, $2, $3, $4, 900913)
+END
+    end
+    
+    def coastline_query_arguments(index, options = {})
+      return [<<-END, [index.bbox[0], index.bbox[1], index.bbox[2], index.bbox[3], -index.left, -index.top, @config["granularity"].to_f / index.width, @config["granularity"].to_f / index.height]]
+select
+  ST_AsGeoJSON(
+    ST_TransScale(
+      ST_ForceRHR(
+        ST_Intersection(
+          ST_Buffer(geom, 0.0),
+          ST_MakeEnvelope($1, $2, $3, $4, 900913)
+        )
+      ),
+      $5, $6, $7, $8
+    ),
+    0
+  ) as geometry,
+  'coastline' as natural
+from
+  #{@connection.quote_ident(options[:table])}
+where
+  geom && ST_MakeEnvelope($1, $2, $3, $4, 900913)
 END
     end
   

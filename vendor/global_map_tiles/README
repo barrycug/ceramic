@@ -1,0 +1,9 @@
+This is a ruby port of the excellent globalmaptiles.py written by Klokan Petr 
+Pridal and found at http://www.maptiler.org/.
+
+This library is mostly untested. Please compare your results to the original 
+python code before you rely on this library.
+
+run `ruby test.rb` to see the difference in output between the two libraries.
+
+-Sam

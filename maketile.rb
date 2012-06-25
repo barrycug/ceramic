@@ -5,6 +5,7 @@ require "#{File.dirname(__FILE__)}/lib/cover"
 require "#{File.dirname(__FILE__)}/lib/tile_index"
 require "#{File.dirname(__FILE__)}/lib/query_builder"
 require "#{File.dirname(__FILE__)}/lib/renderer"
+require "#{File.dirname(__FILE__)}/lib/tile_set"
 require "#{File.dirname(__FILE__)}/vendor/trollop"
 
 options = Trollop::options do
@@ -30,14 +31,38 @@ if options[:tile]
   
 elsif options[:tiles]
   
+  count = 0
+  
+  tile_set = TileSet.new(options[:output])
+  
+  tile_set.create_schema
+  tile_set.insert_metadata
+  
   File.open(options[:tiles], "r") do |f|
+    
     f.each_line do |line|
+      
       if line =~ /\d+\/\d+\/\d+/
-        puts "writing tile #{line}"
+        
         index = TileIndex.from_str(line)
-        cover.write_output(index, options[:output])
+        data  = cover.render_tile(index)
+        
+        tile_set.add_tile(index, data)
+        
+        count += 1
+        
+        if count % 500 == 0
+          puts "#{count} tiles added"
+        end
+        
       end
+      
     end
+    
   end
+  
+  tile_set.finalize
+  
+  tile_set.close
   
 end

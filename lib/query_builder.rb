@@ -43,7 +43,7 @@ select
 from
   #{@connection.quote_ident(options[:table])}
 where
-  way && ST_MakeEnvelope($5, $6, $7, $8, 3857)
+  way && ST_MakeEnvelope($5, $6, $7, $8, 900913)
 END
     end
     

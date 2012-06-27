@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+require "rubygems"
+require "rack"
+require "yaml"
+
+$LOAD_PATH << "./#{File.dirname(__FILE__)}/../lib"
+$LOAD_PATH << "./#{File.dirname(__FILE__)}/../vendor"
+require "trollop"
+require "cover"
+require "./#{File.dirname(__FILE__)}/../debug/debug"
+
+options = Trollop::options do
+  opt :config, "Configuration file", :type => :string
+  opt :tileset, "Tileset file", :type => :string
+  opt :zoom, "Initial map zoom", :type => :integer
+  opt :latlon, "Initial map center (lat,lon)", :type => :string
+  opt :port, "Port", :type => :integer, :default => 3857
+  opt :host, "Host", :type => :string, :default => "0.0.0.0"
+end
+
+if options[:tileset] == nil && options[:config] == nil
+  
+  Trollop::die "must specify either a config file with --config or a tileset file with --tileset"
+
+end
+
+Rack::Server.start(
+  :app => Cover::Debug.new(options),
+  :Host => options[:host],
+  :Port => options[:port]
+)

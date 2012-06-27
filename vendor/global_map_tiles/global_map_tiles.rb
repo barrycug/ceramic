@@ -24,7 +24,7 @@ class GlobalMercator
   #   my = my * self.originShift / 180.0
   #   return mx, my
   # 
-  def lat_long_to_meters (lat, lon)
+  def lat_lon_to_meters (lat, lon)
     mx = lon * @origin_shift / 180.0
     my = Math.log( Math.tan((90 + lat) * Math::PI / 360.0 )) / (Math::PI / 180.0)
   
@@ -409,7 +409,7 @@ if $PROGRAM_NAME == __FILE__
 #   print (mx, my)
 #   tminx, tminy = mercator.MetersToTile( mx, my, tz )
 #   
-  mx, my = mercator.lat_long_to_meters( lat, lon )
+  mx, my = mercator.lat_lon_to_meters( lat, lon )
   puts "Spherical Mercator (ESPG:900913) coordinates for lat/lon: "
   puts "(#{mx}, #{my})"
   tminx, tminy = mercator.meters_to_tile( mx, my, tz )
@@ -423,7 +423,7 @@ if $PROGRAM_NAME == __FILE__
 #     tmaxx, tmaxy = tminx, tminy
 #     
   if boundingbox
-    mx, my = mercator.lat_long_to_meters( latmax, lonmax )
+    mx, my = mercator.lat_lon_to_meters( latmax, lonmax )
     puts "Spherical Mercator (ESPG:900913) cooridnate for maxlat/maxlon: "
     puts "(#{mx}, #{my})"
     tmaxx, tmaxy = mercator.meters_to_tile( mx, my, tz )

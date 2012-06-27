@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+$LOAD_PATH << "./#{File.dirname(__FILE__)}/../vendor"
+require "global_map_tiles/global_map_tiles"
+
+if ARGV.size != 3 && ARGV.size != 5
+  puts "Usage: ruby script/list zoomlevel lat lon [lat lon]"
+  exit
+end
+
+tz = ARGV[0].to_i
+mercator = GlobalMercator.new
+
+latmin = ARGV[1].to_f
+lonmin = ARGV[2].to_f
+
+if ARGV.size > 3
+  latmax = ARGV[3].to_f
+  lonmax = ARGV[4].to_f
+else
+  latmax = latmin
+  lonmax = lonmin
+end
+
+latmin, latmax = latmax, latmin if latmin > latmax
+lonmin, lonmax = lonmax, lonmin if lonmin > lonmax
+
+mminx, mminy = mercator.lat_lon_to_meters(latmin, lonmin)
+mmaxx, mmaxy = mercator.lat_lon_to_meters(latmax, lonmax)
+
+tminx, tminy = mercator.meters_to_tile(mminx, mminy, tz)
+tmaxx, tmaxy = mercator.meters_to_tile(mmaxx, mmaxy, tz)
+
+(tminy..tmaxy).each do |ty|
+  (tminx..tmaxx).each do |tx|
+    puts ([tz] + mercator.google_tile(tx, ty, tz)).join("/")
+  end
+end

@@ -1,0 +1,49 @@
+#!/usr/bin/env ruby
+require "rubygems"
+require "yaml"
+
+$LOAD_PATH << "./#{File.dirname(__FILE__)}/../lib"
+$LOAD_PATH << "./#{File.dirname(__FILE__)}/../vendor"
+require "trollop"
+require "cover"
+
+options = Trollop::options do
+  opt :config, "Configuration file", :type => :string, :required => true
+  opt :tile, "Tile index (z/x/y)", :type => :string, :required => true
+end
+
+index = nil
+
+begin
+  index = Cover::Index.from_string(options[:tile])
+rescue ArgumentError
+  Trollop::die "tile index must be of the form z/x/y"
+end
+
+# Set up maker using config...
+
+# TODO: this is duplicated in a couple places!
+
+config = YAML.load(File.read(options[:config]))
+
+connection = PG.connect(config["connection"])
+
+maker = Cover::Maker.new(granularity: config["granularity"])
+
+config["sources"].each do |source|
+  
+  source = Cover::Sources::PostGIS.new(
+    connection: connection,
+    table: source["table"],
+    srid: source["srid"],
+    geometry_column: source["geometry_column"],
+    type: source["type"].to_sym
+  )
+  
+  maker.sources << source
+  
+end
+
+# Render the single tile
+
+puts maker.render_tile(index)

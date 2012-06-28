@@ -71,10 +71,14 @@ module Cover
         
         def point_query_arguments(index, granularity)
           
+          granule = index.width / granularity.to_f
+          
           params = [
             -index.left, -index.top, granularity.to_f / index.width, granularity.to_f / index.height,
             index.left, index.top, index.right, index.bottom
           ]
+          
+          subquery = @table.gsub("!granule!", granule.to_s)
           
           [<<-END, params]
 SELECT
@@ -83,7 +87,7 @@ SELECT
     ST_TransScale(#{quoted_geometry_column}, $1::float, $2::float, $3::float, $4::float), 0
   ) AS json
 FROM
-  #{@table}
+  #{subquery}
 WHERE
   #{quoted_geometry_column} && ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@srid})
 END
@@ -92,11 +96,15 @@ END
         
         def line_query_arguments(index, granularity)
           
+          granule = index.width / granularity.to_f
+          
           if @simplify
-            tolerance = @simplify * (index.width / granularity.to_f)
+            tolerance = @simplify * granule
           else
             tolerance = 0
           end
+          
+          subquery = @table.gsub("!granule!", granule.to_s)
           
           params = [
             -index.left, -index.top, granularity.to_f / index.width, granularity.to_f / index.height,
@@ -121,7 +129,7 @@ SELECT
     0
   ) AS json
 FROM
-  #{@table}
+  #{subquery}
 WHERE
   #{quoted_geometry_column} && ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@srid})
 END
@@ -130,11 +138,15 @@ END
         
         def polygon_query_arguments(index, granularity)
           
+          granule = index.width / granularity.to_f
+          
           if @simplify
-            tolerance = @simplify * (index.width / granularity.to_f)
+            tolerance = @simplify * granule
           else
             tolerance = 0
           end
+          
+          subquery = @table.gsub("!granule!", granule.to_s)
           
           params = [
             -index.left, -index.top, granularity.to_f / index.width, granularity.to_f / index.height,
@@ -164,7 +176,7 @@ SELECT
     0
   ) AS json
 FROM
-  #{@table}
+  #{subquery}
 WHERE
   #{quoted_geometry_column} && ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@srid})
 END

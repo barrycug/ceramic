@@ -5,17 +5,22 @@ module Cover
     
     class PostGIS
       
-      attr_reader :connection, :table, :srid, :geometry_column, :type
-      
       def initialize(options = {})
         
         # TODO: validate options
         
         @connection = options[:connection]
-        @table = options[:table]
-        @srid = options[:srid]
-        @geometry_column = options[:geometry_column]
-        @type = options[:type]
+        
+        @table = options["table"]
+        @srid = options["srid"]
+        @geometry_column = options["geometry_column"]
+        @type = options["type"].to_sym
+        @simplify = options["simplify"]
+        @zoom = options["zoom"]
+        
+        if @zoom && !@zoom.is_a?(Array)
+          @zoom = [@zoom]
+        end
         
       end
       
@@ -23,6 +28,10 @@ module Cover
       # specified granularity.
       
       def select_rows(index, granularity)
+        
+        if @zoom && !@zoom.include?(index.z)
+          return []
+        end
         
         rows = []
         

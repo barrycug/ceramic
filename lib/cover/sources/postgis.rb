@@ -92,9 +92,16 @@ END
         
         def line_query_arguments(index, granularity)
           
+          if @simplify
+            tolerance = @simplify * (index.width / granularity.to_f)
+          else
+            tolerance = 0
+          end
+          
           params = [
             -index.left, -index.top, granularity.to_f / index.width, granularity.to_f / index.height,
-            index.left, index.top, index.right, index.bottom
+            index.left, index.top, index.right, index.bottom,
+            tolerance
           ]
           
           [<<-END, params]
@@ -103,7 +110,10 @@ SELECT
   ST_AsGeoJSON(
     ST_TransScale(
       ST_Intersection(
-        #{quoted_geometry_column},
+        ST_SimplifyPreserveTopology(
+          #{quoted_geometry_column},
+          $9::float
+        ),
         ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@srid})
       ),
       $1::float, $2::float, $3::float, $4::float
@@ -120,9 +130,16 @@ END
         
         def polygon_query_arguments(index, granularity)
           
+          if @simplify
+            tolerance = @simplify * (index.width / granularity.to_f)
+          else
+            tolerance = 0
+          end
+          
           params = [
             -index.left, -index.top, granularity.to_f / index.width, granularity.to_f / index.height,
-            index.left, index.top, index.right, index.bottom
+            index.left, index.top, index.right, index.bottom,
+            tolerance
           ]
           
           [<<-END, params]
@@ -132,9 +149,12 @@ SELECT
     ST_TransScale(
       ST_ForceRHR(
         ST_Intersection(
-          ST_Buffer(
-            #{quoted_geometry_column},
-            0
+          ST_SimplifyPreserveTopology(
+            ST_Buffer(
+              #{quoted_geometry_column},
+              0
+            ),
+            $9::float
           ),
           ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@srid})
         )

@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 require "rubygems"
-require "rack"
 
 $LOAD_PATH << "./#{File.dirname(__FILE__)}/../lib"
 $LOAD_PATH << "./#{File.dirname(__FILE__)}/../vendor"

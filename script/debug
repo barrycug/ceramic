@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 require "rubygems"
 require "rack"
-require "yaml"
 
 $LOAD_PATH << "./#{File.dirname(__FILE__)}/../lib"
 $LOAD_PATH << "./#{File.dirname(__FILE__)}/../vendor"
@@ -23,6 +22,11 @@ if options[:tileset] == nil && options[:config] == nil
 end
 
 if options[:tileset]
+  
+  if !File.exist?(options[:tileset])
+    puts "Tileset file doesn't exist: #{options[:tileset]}"
+    exit
+  end
   
   database = SQLite3::Database.new(options[:tileset])
   tileset = Cover::Tileset.new(database)

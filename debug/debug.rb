@@ -10,19 +10,9 @@ module Cover
       super()
       
       if options[:tileset]
-  
-        database = SQLite3::Database.new(options[:tileset])
-        @tileset = Cover::Tileset.new(database)
-  
+        @tileset = options[:tileset]
       else
-        
-        @config_path = options[:config]
-        
-        config = YAML.load(File.read(@config_path))
-        @connection = PG.connect(config["connection"])
-        
-        reload_maker_config
-  
+        @maker = options[:maker]
       end
     
       # TODO: determine initial location by asking maker or tileset?
@@ -45,12 +35,10 @@ module Cover
   
     get "/:z/:x/:y" do
       content_type :js
-      reload_maker_config
       fetch_tile_with_callback(params[:z], params[:x], params[:y])
     end
     
     get "/:z/:x/:y/inspect" do
-      reload_maker_config
       @tile = fetch_tile(params[:z], params[:x], params[:y])
       erb :inspect
     end
@@ -88,36 +76,6 @@ module Cover
           "tileData(undefined, #{z}, #{x}, #{y})"
         end
       
-      end
-      
-      def reload_maker_config
-        
-        time = File.mtime(@config_path)
-        
-        if time != @last_modified
-          
-          config = YAML.load(File.read(@config_path))
-          
-          @maker = Cover::Maker.new(granularity: config["granularity"])
-
-          config["sources"].each do |source|
-  
-            source = Cover::Sources::PostGIS.new(
-              connection: @connection,
-              table: source["table"],
-              srid: source["srid"],
-              geometry_column: source["geometry_column"],
-              type: source["type"].to_sym
-            )
-  
-            @maker.sources << source
-  
-          end
-          
-          @last_modified = time
-        
-        end
-        
       end
   
   end

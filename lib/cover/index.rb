@@ -4,6 +4,10 @@ module Cover
   
   class Index
     
+    def self.bbox_list(bbox, levels)
+      []
+    end
+    
     def self.from_string(string)
       if string =~ /(\d+)\/(\d+)\/(\d+)/
         self.new($1.to_i, $2.to_i, $3.to_i)

@@ -1,15 +1,25 @@
 #!/usr/bin/env ruby
 require "rubygems"
-require "yaml"
+require "rack"
 
 $LOAD_PATH << "./#{File.dirname(__FILE__)}/../lib"
 $LOAD_PATH << "./#{File.dirname(__FILE__)}/../vendor"
 require "trollop"
 require "cover"
+require "./#{File.dirname(__FILE__)}/../debug/debug"
 
 options = Trollop::options do
-  opt :config, "Configuration file", :type => :string, :required => true
-  opt :tile, "Tile index (z/x/y)", :type => :string, :required => true
+  opt :config, "Configuration file (.rb)", :type => :string
+end
+
+options[:tile] = ARGV[0]
+
+if options[:tile] == nil
+  Trollop::die "must specify a tile index"
+end
+
+if options[:config] == nil
+  Trollop::die "must specify either a config file with --config"
 end
 
 index = nil
@@ -20,30 +30,15 @@ rescue ArgumentError
   Trollop::die "tile index must be of the form z/x/y"
 end
 
-# Set up maker using config...
+require File.expand_path(options[:config])
 
-# TODO: this is duplicated in a couple places!
-
-config = YAML.load(File.read(options[:config]))
-
-connection = PG.connect(config["connection"])
-
-maker = Cover::Maker.new(granularity: config["granularity"])
-
-config["sources"].each do |source|
-  
-  source = Cover::Sources::PostGIS.new(
-    connection: connection,
-    table: source["table"],
-    srid: source["srid"],
-    geometry_column: source["geometry_column"],
-    type: source["type"].to_sym
-  )
-  
-  maker.sources << source
-  
+if Cover.config == nil
+  puts "Configuration file must set Cover.config"
+  exit
 end
 
-# Render the single tile
+Cover.config.setup
 
-puts maker.render_tile(index)
+puts Cover.config.maker.render_tile(index)
+
+Cover.config.teardown

@@ -10,8 +10,8 @@ require "cover"
 require "./#{File.dirname(__FILE__)}/../debug/debug"
 
 options = Trollop::options do
-  opt :config, "Configuration file", :type => :string
-  opt :tileset, "Tileset file", :type => :string
+  opt :config, "Configuration file (.rb)", :type => :string
+  opt :tileset, "Tileset file (.mbtiles)", :type => :string
   opt :zoom, "Initial map zoom", :type => :integer
   opt :latlon, "Initial map center (lat,lon)", :type => :string
   opt :port, "Port", :type => :integer, :default => 3857
@@ -19,13 +19,35 @@ options = Trollop::options do
 end
 
 if options[:tileset] == nil && options[:config] == nil
-  
   Trollop::die "must specify either a config file with --config or a tileset file with --tileset"
-
 end
 
-Rack::Server.start(
-  :app => Cover::Debug.new(options),
-  :Host => options[:host],
-  :Port => options[:port]
-)
+if options[:tileset]
+  
+  database = SQLite3::Database.new(options[:tileset])
+  tileset = Cover::Tileset.new(database)
+
+  Rack::Server.start(
+    :app => Cover::Debug.new(options.merge(tileset: tileset)),
+    :Host => options[:host],
+    :Port => options[:port]
+  )
+  
+else
+  
+  require File.expand_path(options[:config])
+  
+  if Cover.config == nil
+    puts "Configuration file must set Cover.config"
+    exit
+  end
+  
+  Cover.config.setup
+
+  Rack::Server.start(
+    :app => Cover::Debug.new(options.merge(maker: Cover.config.maker)),
+    :Host => options[:host],
+    :Port => options[:port]
+  )
+  
+end

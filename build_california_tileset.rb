@@ -12,8 +12,8 @@ indices = []
 
 mercator = GlobalMercator.new(256)
 
-mminx, mminy = mercator.lat_lon_to_meters(37.22, -123.07)
-mmaxx, mmaxy = mercator.lat_lon_to_meters(38.88, -121.11)
+mminx, mminy = mercator.lat_lon_to_meters(31.9, -125.3)
+mmaxx, mmaxy = mercator.lat_lon_to_meters(42.4, -113.6)
 
 [10, 12, 14].each do |tz|
 

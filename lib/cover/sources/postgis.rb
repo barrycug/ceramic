@@ -12,9 +12,9 @@ module Cover
         @connection = options[:connection]
         
         @table = options[:table]
-        @srid = options[:srid]
+        @geometry_srid = options[:geometry_srid]
         @geometry_column = options[:geometry_column]
-        @type = options[:type]
+        @geometry_type = options[:geometry_type]
         @simplify = options[:simplify]
         @zoom = options[:zoom]
         
@@ -50,7 +50,7 @@ module Cover
       
         def query_arguments(index, granularity)
           
-          case @type
+          case @geometry_type
           when :point
             point_query_arguments(index, granularity)
           when :line
@@ -68,7 +68,7 @@ module Cover
         def point_query_arguments(index, granularity)
           
           granule = index.width / granularity.to_f
-          bbox = "ST_MakeEnvelope(#{index.left}::float, #{index.top}::float, #{index.right}::float, #{index.bottom}::float, #{@srid})"
+          bbox = "ST_MakeEnvelope(#{index.left}::float, #{index.top}::float, #{index.right}::float, #{index.bottom}::float, #{@geometry_srid})"
           
           params = [
             -index.left, -index.top, granularity.to_f / index.width, granularity.to_f / index.height,
@@ -86,7 +86,7 @@ SELECT
 FROM
   #{subquery}
 WHERE
-  #{quoted_geometry_column} && ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@srid})
+  #{quoted_geometry_column} && ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@geometry_srid})
 END
           
         end
@@ -94,7 +94,7 @@ END
         def line_query_arguments(index, granularity)
           
           granule = index.width / granularity.to_f
-          bbox = "ST_MakeEnvelope(#{index.left}::float, #{index.top}::float, #{index.right}::float, #{index.bottom}::float, #{@srid})"
+          bbox = "ST_MakeEnvelope(#{index.left}::float, #{index.top}::float, #{index.right}::float, #{index.bottom}::float, #{@geometry_srid})"
           
           subquery = @table.gsub("!granule!", granule.to_s).gsub("!bbox!", bbox.to_s)
           
@@ -120,7 +120,7 @@ SELECT
           #{quoted_geometry_column},
           $9::float
         ),
-        ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@srid})
+        ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@geometry_srid})
       ),
       $1::float, $2::float, $3::float, $4::float
     ),
@@ -129,7 +129,7 @@ SELECT
 FROM
   #{subquery}
 WHERE
-  #{quoted_geometry_column} && ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@srid})
+  #{quoted_geometry_column} && ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@geometry_srid})
 END
             
           else
@@ -146,7 +146,7 @@ SELECT
     ST_TransScale(
       ST_Intersection(
         #{quoted_geometry_column},
-        ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@srid})
+        ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@geometry_srid})
       ),
       $1::float, $2::float, $3::float, $4::float
     ),
@@ -155,7 +155,7 @@ SELECT
 FROM
   #{subquery}
 WHERE
-  #{quoted_geometry_column} && ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@srid})
+  #{quoted_geometry_column} && ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@geometry_srid})
 END
             
           end
@@ -165,7 +165,7 @@ END
         def polygon_query_arguments(index, granularity)
           
           granule = index.width / granularity.to_f
-          bbox = "ST_MakeEnvelope(#{index.left}::float, #{index.top}::float, #{index.right}::float, #{index.bottom}::float, #{@srid})"
+          bbox = "ST_MakeEnvelope(#{index.left}::float, #{index.top}::float, #{index.right}::float, #{index.bottom}::float, #{@geometry_srid})"
           
           subquery = @table.gsub("!granule!", granule.to_s).gsub("!bbox!", bbox.to_s)
           
@@ -193,7 +193,7 @@ SELECT
             ),
             0
           ),
-          ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@srid})
+          ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@geometry_srid})
         )
       ),
       $1::float, $2::float, $3::float, $4::float
@@ -203,7 +203,7 @@ SELECT
 FROM
   #{subquery}
 WHERE
-  #{quoted_geometry_column} && ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@srid})
+  #{quoted_geometry_column} && ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@geometry_srid})
 END
             
           else
@@ -224,7 +224,7 @@ SELECT
             #{quoted_geometry_column},
             0
           ),
-          ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@srid})
+          ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@geometry_srid})
         )
       ),
       $1::float, $2::float, $3::float, $4::float
@@ -234,7 +234,7 @@ SELECT
 FROM
   #{subquery}
 WHERE
-  #{quoted_geometry_column} && ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@srid})
+  #{quoted_geometry_column} && ST_MakeEnvelope($5::float, $6::float, $7::float, $8::float, #{@geometry_srid})
 END
             
           end

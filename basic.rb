@@ -25,7 +25,7 @@ class Basic
     standard_planet_options = {
       connection: @connection,
       geometry_column: "way",
-      srid: 900913
+      geometry_srid: 900913
     }
     
     # Select unsimplified coastline. Since there is a union operation, this is faster
@@ -35,8 +35,8 @@ class Basic
       connection: @connection,
       table: "(select ST_Union(ST_Buffer(geom, 0)) as geom, 'coastline' as \"natural\" from coastlines where geom && !bbox!) as c",
       geometry_column: "geom",
-      type: :polygon,
-      srid: 900913,
+      geometry_type: :polygon,
+      geometry_srid: 900913,
       zoom: [14]
     )
     
@@ -46,7 +46,7 @@ class Basic
     maker.sources << Cover::Sources::PostGIS.new(
       standard_planet_options.merge(
         table: "planet_osm_polygon",
-        type: :polygon,
+        geometry_type: :polygon,
         zoom: [14]
       )
     )
@@ -54,7 +54,7 @@ class Basic
     maker.sources << Cover::Sources::PostGIS.new(
       standard_planet_options.merge(
         table: "planet_osm_line",
-        type: :line,
+        geometry_type: :line,
         zoom: [14]
       )
     )
@@ -62,7 +62,7 @@ class Basic
     maker.sources << Cover::Sources::PostGIS.new(
       standard_planet_options.merge(
         table: "planet_osm_point",
-        type: :point,
+        geometry_type: :point,
         zoom: [14]
       )
     )
@@ -75,8 +75,8 @@ class Basic
       connection: @connection,
       table: "(select ST_Union(ST_Buffer(geom, 0)) as geom, 'coastline' as \"natural\" from coastlines where geom && !bbox! and ST_Area(geom) > !granule! * !granule! * 32 * 32) as c",
       geometry_column: "geom",
-      type: :polygon,
-      srid: 900913,
+      geometry_type: :polygon,
+      geometry_srid: 900913,
       simplify: 16,
       zoom: [10, 12]
     )
@@ -86,7 +86,7 @@ class Basic
     maker.sources << Cover::Sources::PostGIS.new(
       standard_planet_options.merge(
         table: "(select * from planet_osm_polygon where (\"natural\" in ('water', 'wood', 'land', 'beach', 'bay') or \"landuse\" in ('forest', 'residential') or waterway in ('lake', 'river') or boundary in ('administrative', 'protected_area', 'national_park')) and ST_Area(way) > !granule! * !granule! * 256 * 256) as p",
-        type: :polygon,
+        geometry_type: :polygon,
         simplify: 16,
         zoom: [10, 12]
       )
@@ -95,7 +95,7 @@ class Basic
     maker.sources << Cover::Sources::PostGIS.new(
       standard_planet_options.merge(
         table: "(select * from planet_osm_line where (\"waterway\" = 'river' or highway in ('motorway', 'trunk', 'primary', 'secondary') or admin_level <> '' or route = 'ferry') and ST_Length(way) > !granule! * 64) as p",
-        type: :line,
+        geometry_type: :line,
         simplify: 16,
         zoom: [10, 12]
       )
@@ -104,7 +104,7 @@ class Basic
     maker.sources << Cover::Sources::PostGIS.new(
       standard_planet_options.merge(
         table: "(select * from planet_osm_point where place in ('city', 'town') or \"natural\" = 'peak') as p",
-        type: :point,
+        geometry_type: :point,
         zoom: [10, 12]
       )
     )

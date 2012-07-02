@@ -7,10 +7,35 @@ module Cover
       
       def initialize(options = {})
         
-        # TODO: validate options
+        unless options.has_key?(:connection)
+          raise ArgumentError, "No database connection specified"
+        end
+        
+        unless options.has_key?(:table)
+          raise ArgumentError, "No table or subquery specified"
+        end
+        
+        unless options.has_key?(:geometry_srid)
+          raise ArgumentError, "No geometry SRID specified"
+        end
+        
+        unless options.has_key?(:geometry_column)
+          raise ArgumentError, "No geometry column specified"
+        end
+        
+        unless options.has_key?(:geometry_type)
+          raise ArgumentError, "No geometry type specified"
+        end
+        
+        unless [:point, :line, :polygon].include?(options[:geometry_type])
+          raise ArgumentError, "Geometry type must be :point, :line, or :polygon"
+        end
+        
+        unless options[:zoom] != nil && options[:zoom].is_a?(Array)
+          raise ArgumentError, "Zoom filter must be an array"
+        end
         
         @connection = options[:connection]
-        
         @table = options[:table]
         @geometry_srid = options[:geometry_srid]
         @geometry_column = options[:geometry_column]

@@ -31,7 +31,7 @@ module Cover
           raise ArgumentError, "Geometry type must be :point, :line, or :polygon"
         end
         
-        unless options[:zoom] != nil && options[:zoom].is_a?(Array)
+        unless options[:zoom] == nil || options[:zoom].is_a?(Array)
           raise ArgumentError, "Zoom filter must be an array"
         end
         

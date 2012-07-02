@@ -1,5 +1,6 @@
 require "sinatra/base"
 require "cover"
+require "zlib"
 
 module Cover
 
@@ -11,6 +12,7 @@ module Cover
       
       if options[:tileset]
         @tileset = options[:tileset]
+        @format = @tileset.get_metadata["format"]
       else
         @maker = options[:maker]
       end
@@ -56,10 +58,23 @@ module Cover
       
         index = Cover::Index.new(z.to_i, x.to_i, y.to_i)
     
-        data = if @tileset
-          @tileset.select_tile(index)
+        if @tileset
+          
+          data = @tileset.select_tile(index)
+          
+          # Uncompress data if necessary.
+          # TODO: content negotiation
+          
+          if data != nil && @format == "js.gz"
+            Zlib.inflate(data)
+          else
+            data
+          end
+          
         else
+          
           @maker.render_tile(index)
+          
         end
         
       end

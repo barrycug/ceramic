@@ -3,6 +3,7 @@ require "rubygems"
 
 $LOAD_PATH << "./#{File.dirname(__FILE__)}/lib"
 $LOAD_PATH << "./#{File.dirname(__FILE__)}/vendor"
+require "zlib"
 require "cover"
 require "global_map_tiles/global_map_tiles"
 
@@ -47,14 +48,15 @@ tileset = Cover::Tileset.new(database)
 tileset.create_schema
 tileset.set_metadata(
   name: "California Data Tiles",
-  format: "js"
+  format: "js.gz"
 )
 
 # Render the tiles
 
 indices.each_with_index do |index, i|
   puts "#{index.z}/#{index.x}/#{index.y} (#{i}/#{indices.size})"
-  tileset.insert_tile(index, Cover.config.maker.render_tile(index))
+  data = Cover.config.maker.render_tile(index)
+  tileset.insert_tile(index, Zlib.deflate(data, 9))
 end
 
 # Vacuum/analyze and close databases

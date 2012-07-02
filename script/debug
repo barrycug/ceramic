@@ -11,8 +11,7 @@ require "./#{File.dirname(__FILE__)}/../debug/debug"
 options = Trollop::options do
   opt :config, "Configuration file (.rb)", :type => :string
   opt :tileset, "Tileset file (.mbtiles)", :type => :string
-  opt :zoom, "Initial map zoom", :type => :integer
-  opt :latlon, "Initial map center (lat,lon)", :type => :string
+  opt :center, "Initial map center (lat,lon,zoom)", :type => :string
   opt :port, "Port", :type => :integer, :default => 3857
   opt :host, "Host", :type => :string, :default => "0.0.0.0"
 end

@@ -16,14 +16,11 @@ module Cover
       else
         @maker = options[:maker]
       end
-      
-      if options[:zoom] =~ /(\d+)/
-        @zoom = $1
-      end
 
-      if options[:latlon] =~ /(\-?\d+(?:\.\d+)?),(\-?\d+(?:\.\d+)?)/
+      if options[:center] =~ /(\-?\d+(?:\.\d+)?),(\-?\d+(?:\.\d+)?),(\d+)/
         @lat = $1
         @lon = $2
+        @zoom = $3
       end
     
     end

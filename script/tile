@@ -30,14 +30,10 @@ rescue ArgumentError
 end
 
 require File.expand_path(options[:config])
+  
+config = Object.const_get(::File.basename(options[:config], '.rb').capitalize).new
+config.setup
 
-if Cover.config == nil
-  puts "Configuration file must set Cover.config"
-  exit
-end
+puts config.maker.render_tile(index)
 
-Cover.config.setup
-
-puts Cover.config.maker.render_tile(index)
-
-Cover.config.teardown
+config.teardown

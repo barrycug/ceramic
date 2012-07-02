@@ -41,15 +41,11 @@ else
   
   require File.expand_path(options[:config])
   
-  if Cover.config == nil
-    puts "Configuration file must set Cover.config"
-    exit
-  end
-  
-  Cover.config.setup
+  config = Object.const_get(::File.basename(options[:config], '.rb').capitalize).new
+  config.setup
 
   Rack::Server.start(
-    :app => Cover::Debug.new(options.merge(maker: Cover.config.maker)),
+    :app => Cover::Debug.new(options.merge(maker: config.maker)),
     :Host => options[:host],
     :Port => options[:port]
   )

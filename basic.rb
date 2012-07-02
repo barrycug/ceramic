@@ -114,5 +114,3 @@ class Basic
   end
 
 end
-
-Cover.config = Basic.new

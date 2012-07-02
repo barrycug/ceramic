@@ -16,21 +16,14 @@ module Cover
       else
         @maker = options[:maker]
       end
-    
-      # TODO: determine initial location by asking maker or tileset?
-    
+      
       if options[:zoom] =~ /(\d+)/
         @zoom = $1
-      else
-        @zoom = 13
       end
 
       if options[:latlon] =~ /(\-?\d+(?:\.\d+)?),(\-?\d+(?:\.\d+)?)/
         @lat = $1
         @lon = $2
-      else
-        @lat = 37.478
-        @lon = -122.449
       end
     
     end

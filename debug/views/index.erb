@@ -24,11 +24,37 @@
     <script src="/render.js"></script>
     <script>
       
-      var map = new L.Map("map", {
-        center: new L.LatLng(<%= @lat %>, <%= @lon %>),
-        zoom: <%= @zoom %>
+      var options = {
+        zoom: <%= @zoom != nil ? @zoom : 2 %>,
+        center: new L.LatLng(
+          <%= @lat != nil && @lon != nil ? @lat : 0 %>,
+          <%= @lat != nil && @lon != nil ? @lon : 0 %>
+        )
+      };
+      
+      (function() {
+      
+        var lat, lon, zoom;
+      
+        if ((lat = parseFloat(localStorage.getItem("lat"))) &&
+            (lon = parseFloat(localStorage.getItem("lon"))) &&
+            (zoom = parseInt(localStorage.getItem("zoom")))) {
+          options.center = new L.LatLng(lat, lon);
+          options.zoom = zoom;
+        }
+        
+      })();
+      
+      var map = new L.Map("map", options);
+      
+      map.on("moveend", function() {
+        localStorage.setItem("lat", map.getCenter().lat.toString());
+        localStorage.setItem("lon", map.getCenter().lng.toString());
       });
       
+      map.on("zoomend", function() {
+        localStorage.setItem("zoom", map.getZoom().toString());
+      });
       
       // Mapnik underlay
       

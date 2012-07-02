@@ -8,7 +8,9 @@ module Cover
     
     def initialize(options = {})
       
-      # TODO: validate options
+      unless options.has_key?(:granularity)
+        raise ArgumentError, "No granularity specified"
+      end
       
       @granularity = options[:granularity]
       @sources = []

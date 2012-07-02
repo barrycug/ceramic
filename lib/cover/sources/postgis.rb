@@ -25,7 +25,7 @@ module Cover
       
       def select_rows(index, granularity)
         
-        unless @zoom.include?(index.z)
+        if @zoom && !@zoom.include?(index.z)
           return []
         end
         

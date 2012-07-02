@@ -7,6 +7,10 @@ require "zlib"
 require "cover"
 require "global_map_tiles/global_map_tiles"
 
+# Config
+
+require "./#{File.dirname(__FILE__)}/basic"
+
 # Build the list of tiles
 
 indices = []
@@ -29,18 +33,13 @@ mmaxx, mmaxy = mercator.lat_lon_to_meters(42.4, -113.6)
   
 end
 
-# Load the config file
+# Load the config
 
-require File.expand_path("basic.rb")
-
-if Cover.config == nil
-  puts "Configuration file did not set Cover.config"
-  exit
-end
+config = Basic.new
 
 # Set up to rendering and store the files
 
-Cover.config.setup
+config.setup
 
 database = SQLite3::Database.new("california.mbtiles")
 tileset = Cover::Tileset.new(database)
@@ -55,7 +54,7 @@ tileset.set_metadata(
 
 indices.each_with_index do |index, i|
   puts "#{index.z}/#{index.x}/#{index.y} (#{i}/#{indices.size})"
-  data = Cover.config.maker.render_tile(index)
+  data = config.maker.render_tile(index)
   tileset.insert_tile(index, Zlib.deflate(data, 9))
 end
 
@@ -67,4 +66,4 @@ tileset.optimize
 
 database.close
 
-Cover.config.teardown
+config.teardown

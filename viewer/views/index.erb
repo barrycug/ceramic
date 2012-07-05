@@ -23,6 +23,8 @@
     <script src="/leaflet/leaflet.js"></script>
     <script src="/render.js"></script>
     <script>
+    
+      // "Default" options (possibly from command-line arguments)
       
       var options = {
         zoom: <%= @zoom != nil ? @zoom : 2 %>,
@@ -31,6 +33,9 @@
           <%= @lat != nil && @lon != nil ? @lon : 0 %>
         )
       };
+      
+      
+      // If we used localStorage to store the last position, use that instead
       
       (function() {
       
@@ -45,6 +50,9 @@
         
       })();
       
+      
+      // Set up the map
+      
       var map = new L.Map("map", options);
       
       map.on("moveend", function() {
@@ -56,6 +64,7 @@
         localStorage.setItem("zoom", map.getZoom().toString());
       });
       
+      
       // Mapnik underlay
       
       var mapnik = new L.TileLayer("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
@@ -65,26 +74,9 @@
       
       // Canvas tiles
       
-      var loader = new Worker("loader.js");
-      
-      loader.onmessage = function(event) {
-        
-        var canvas = canvases[event.data.index];
-        
-        if (canvas)
-          renderTile(canvas, event.data.tile);
-        
-      }
-      
-      var canvases = {};
-      
-      function tileIndex(z, x, y) {
-        
-        return z + "/" + x + "/" + y;
-        
-      }
-      
-      function loadTile(canvas, z, x, y) {
+      var canvasTiles = new L.TileLayer.Canvas();
+
+      canvasTiles.drawTile = function(canvas, tilePoint, zoom) {
         
         // draw "loading" overlay
         
@@ -93,20 +85,20 @@
         context.fillStyle = "rgba(255, 255, 255, 0.5)";
         context.fillRect(0, 0, canvas.width, canvas.height);
         
-        // tell the loader to load the tile
+        // load the tile
         
-        var index = tileIndex(z, x, y);
+        var request = new XMLHttpRequest();
         
-        canvases[index] = canvas;
-        loader.postMessage(index);
+        request.onreadystatechange = function() {
+          if (this.readyState == this.DONE) {
+            if (this.status == 200 && this.responseText) {
+              renderTile(canvas, JSON.parse(this.responseText));
+            }
+          }
+        }
         
-      }
-      
-      var canvasTiles = new L.TileLayer.Canvas();
-
-      canvasTiles.drawTile = function(canvas, tilePoint, zoom) {
-        
-        loadTile(canvas, zoom, tilePoint.x, tilePoint.y);
+        request.open("GET", "/" + zoom + "/" + tilePoint.x + "/" + tilePoint.y, true);
+        request.send();
         
       }
       

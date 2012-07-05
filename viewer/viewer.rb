@@ -4,7 +4,7 @@ require "zlib"
 
 module Cover
 
-  class Debug < Sinatra::Base
+  class Viewer < Sinatra::Base
   
     def initialize(options = {})
     
@@ -26,8 +26,16 @@ module Cover
     end
   
     get "/:z/:x/:y" do
-      content_type :js
-      fetch_tile_with_callback(params[:z], params[:x], params[:y])
+      
+      tile = fetch_tile(params[:z], params[:x], params[:y])
+      
+      if tile
+        content_type :js
+        tile
+      else
+        404
+      end
+      
     end
     
     get "/:z/:x/:y/inspect" do
@@ -67,20 +75,6 @@ module Cover
           
         end
         
-      end
-      
-      def fetch_tile_with_callback(z, x, y)
-        
-        data = fetch_tile(z, x, y)
-        
-        # If we didn't find a tile, return undefined instead.
-        
-        if data
-          "tileData(#{data}, #{z}, #{x}, #{y})"
-        else
-          "tileData(undefined, #{z}, #{x}, #{y})"
-        end
-      
       end
   
   end

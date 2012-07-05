@@ -6,7 +6,7 @@ $LOAD_PATH << "./#{File.dirname(__FILE__)}/../lib"
 $LOAD_PATH << "./#{File.dirname(__FILE__)}/../vendor"
 require "trollop"
 require "cover"
-require "./#{File.dirname(__FILE__)}/../debug/debug"
+require "./#{File.dirname(__FILE__)}/../viewer/viewer"
 
 options = Trollop::options do
   opt :config, "Configuration file (.rb)", :type => :string
@@ -31,7 +31,7 @@ if options[:tileset]
   tileset = Cover::Tileset.new(database)
 
   Rack::Server.start(
-    :app => Cover::Debug.new(options.merge(tileset: tileset)),
+    :app => Cover::Viewer.new(options.merge(tileset: tileset)),
     :Host => options[:host],
     :Port => options[:port]
   )
@@ -44,7 +44,7 @@ else
   config.setup
 
   Rack::Server.start(
-    :app => Cover::Debug.new(options.merge(maker: config.maker)),
+    :app => Cover::Viewer.new(options.merge(maker: config.maker)),
     :Host => options[:host],
     :Port => options[:port]
   )

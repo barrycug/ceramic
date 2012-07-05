@@ -63,7 +63,18 @@
       map.addLayer(mapnik);
       
       
-      // Some simple canvas tiles
+      // Canvas tiles
+      
+      var loader = new Worker("loader.js");
+      
+      loader.onmessage = function(event) {
+        
+        var canvas = canvases[event.data.index];
+        
+        if (canvas)
+          renderTile(canvas, event.data.tile);
+        
+      }
       
       var canvases = {};
       
@@ -82,43 +93,12 @@
         context.fillStyle = "rgba(255, 255, 255, 0.5)";
         context.fillRect(0, 0, canvas.width, canvas.height);
         
-        // load a script tag
+        // tell the loader to load the tile
         
-        var path = tileIndex(z, x, y);
+        var index = tileIndex(z, x, y);
         
-        canvases[path] = canvas;
-        
-        var script = document.createElement("script");
-        script.src = "/" + path;
-        
-        document.body.appendChild(script);
-        
-      }
-      
-      // Tile data was loaded. Draw the tile and set up an
-      // event listener on the canvas to dump the tile's
-      // data on alt-click.
-      
-      function tileData(data, z, x, y) {
-        
-        if (typeof data === "undefined")
-          return;
-        
-        var path = tileIndex(z, x, y);
-        var canvas = canvases[path];
-        
-        if (canvas) {
-          
-          renderTile(canvases[path], data);
-          
-          canvas.addEventListener("mousedown", function(e) {
-          
-            if (e.altKey)
-              console.log(data, z, x, y);
-          
-          });
-          
-        }
+        canvases[index] = canvas;
+        loader.postMessage(index);
         
       }
       

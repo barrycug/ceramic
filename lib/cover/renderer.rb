@@ -7,7 +7,6 @@ module Cover
     def render(rows, granularity)
     
       result = {
-        "type" => "FeatureCollection",
         "granularity" => granularity,
         "features" => []
       }
@@ -26,8 +25,7 @@ module Cover
       def row_to_feature(row)
       
         feature = {
-          "type" => "Feature",
-          "properties" => {}
+          "tags" => {}
         }
         
         # Assign the feature's geometry (from the "json" column)
@@ -44,9 +42,11 @@ module Cover
         # GeoJSON geometry column, "json"
       
         row.each_pair do |key, value|
-        
-          if key != "json" && value
-            feature["properties"][key] = value
+          
+          if key == "osm_id"
+            feature["id"] = value
+          elsif key != "json" && value
+            feature["tags"][key] = value
           end
         
         end

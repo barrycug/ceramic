@@ -99,10 +99,10 @@ function renderMultiPolygon(context, coordinates, hue, scale) {
   
 }
 
-function renderTile(canvas, data) {
+function renderTile(canvas, tile) {
   
   var context = canvas.getContext("2d");
-  var scale = canvas.width / data.granularity;
+  var scale = canvas.width / tile.granularity;
   
   context.clearRect(0, 0, canvas.width, canvas.height);
   
@@ -122,7 +122,7 @@ function renderTile(canvas, data) {
   
   // Iterate over features
   
-  data.features.forEach(function(feature) {
+  tile.features.forEach(function(feature) {
     
     // Render feature
     
@@ -139,10 +139,10 @@ function renderTile(canvas, data) {
     else if (feature.geometry.type === "MultiPolygon")
       render = renderMultiPolygon;
     
-    if (typeof feature.properties.osm_id === "undefined")
+    if (typeof feature.id === "undefined")
       render(context, feature.geometry.coordinates, 45, scale);
     else
-      render(context, feature.geometry.coordinates, feature.properties.osm_id, scale);
+      render(context, feature.geometry.coordinates, feature.id, scale);
     
   });
   

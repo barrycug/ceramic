@@ -55,7 +55,7 @@ module Cover
           # Uncompress data if necessary.
           # TODO: content negotiation
           
-          if data != nil && @format == "js.gz"
+          if data != nil && @format == "js.deflate"
             Zlib.inflate(data)
           else
             data

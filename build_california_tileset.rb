@@ -47,7 +47,7 @@ tileset = Cover::Tileset.new(database)
 tileset.create_schema
 tileset.set_metadata(
   name: "California Data Tiles",
-  format: "js.gz"
+  format: "js.deflate"
 )
 
 # Render the tiles

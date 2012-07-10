@@ -102,7 +102,7 @@ function renderMultiPolygon(context, coordinates, hue, scale) {
 function renderTile(canvas, tile) {
   
   var context = canvas.getContext("2d");
-  var scale = canvas.width / tile.granularity;
+  var scale = canvas.width / tile.scale;
   
   context.clearRect(0, 0, canvas.width, canvas.height);
   

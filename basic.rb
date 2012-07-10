@@ -10,107 +10,160 @@ class Basic
   
   def maker
     
-    # Define the "maker", which coordinates querying the database and rendering tiles
-    # to have a granularity of 8192. This means that features will have integer
-    # coordinates ranging from 0 - 8192.
+    # High zoom sources
     
-    maker = Cover::Maker.new(granularity: 8192)
-    
-    # Now define the maker's sources. These are organized by zoom level, and refer to
-    # either tables or subqueries. Each source may also define a simplification tolerance,
-    # which is a multiple of the width of the tile (in this case, in meters) divided by
-    # the granularity. A source must also declare which column is its geometry column,
-    # and what the SRID of that geometry column is.
-
-    standard_planet_options = {
+    high_zoom_point_source = Cover::Source.new(
+      "(select osm_id, way, tags from planet_osm_point) as q",
       connection: @connection,
-      geometry_column: "way",
-      geometry_srid: 900913
-    }
+      srid: 900913,
+      geometry: {
+        "way" => { type: :point }
+      },
+      bbox: "way"
+    )
     
-    # Select unsimplified coastline. Since there is a union operation, this is faster
-    # if we have an intersection clause in the subquery.
-
-    maker.sources << Cover::Sources::PostGIS.new(
+    high_zoom_line_source = Cover::Source.new(
+      "(select osm_id, way, tags, ST_PointOnSurface(way) as point from planet_osm_line) as q",
       connection: @connection,
-      table: "(select ST_Union(ST_Buffer(geom, 0)) as geom, 'coastline' as \"natural\" from coastlines where geom && !bbox!) as c",
-      geometry_column: "geom",
-      geometry_type: :polygon,
-      geometry_srid: 900913,
-      zoom: [14]
+      srid: 900913,
+      geometry: {
+        "way" => { type: :line },
+        "point" => { type: :point }
+      },
+      bbox: "way"
     )
     
-    # Select everything from the planet import and do not simplify. Here we only use
-    # table names since the main query takes care of intersection.
-    
-    maker.sources << Cover::Sources::PostGIS.new(
-      standard_planet_options.merge(
-        table: "planet_osm_polygon",
-        geometry_type: :polygon,
-        zoom: [14]
-      )
-    )
-    
-    maker.sources << Cover::Sources::PostGIS.new(
-      standard_planet_options.merge(
-        table: "planet_osm_line",
-        geometry_type: :line,
-        zoom: [14]
-      )
-    )
-    
-    maker.sources << Cover::Sources::PostGIS.new(
-      standard_planet_options.merge(
-        table: "planet_osm_point",
-        geometry_type: :point,
-        zoom: [14]
-      )
-    )
-    
-    # Similar to the above coastline query, except that we filter by area and
-    # simplify geometry. A "granule" is equal to the width of the tile (in this
-    # case, in meters) divided by the granularity setting.
-
-    maker.sources << Cover::Sources::PostGIS.new(
+    high_zoom_polygon_source = Cover::Source.new(
+      "(select osm_id, way, tags, ST_PointOnSurface(ST_Buffer(way, 0)) as point from planet_osm_polygon) as q",
       connection: @connection,
-      table: "(select ST_Union(ST_Buffer(geom, 0)) as geom, 'coastline' as \"natural\" from coastlines where geom && !bbox! and ST_Area(geom) > !granule! * !granule! * 32 * 32) as c",
-      geometry_column: "geom",
-      geometry_type: :polygon,
-      geometry_srid: 900913,
-      simplify: 16,
-      zoom: [10, 12]
+      srid: 900913,
+      geometry: {
+        "way" => { type: :polygon },
+        "point" => { type: :point }
+      },
+      bbox: "way"
     )
     
-    # Filter polygons and lines by tag and also by area.
-
-    maker.sources << Cover::Sources::PostGIS.new(
-      standard_planet_options.merge(
-        table: "(select * from planet_osm_polygon where (\"natural\" in ('water', 'wood', 'land', 'beach', 'bay') or \"landuse\" in ('forest', 'residential') or waterway in ('lake', 'river') or boundary in ('administrative', 'protected_area', 'national_park')) and ST_Area(way) > !granule! * !granule! * 256 * 256) as p",
-        geometry_type: :polygon,
-        simplify: 16,
-        zoom: [10, 12]
-      )
+    high_zoom_coastline_source = Cover::Source.new(
+      "(select ST_Union(ST_Buffer(geom, 0)) as geom from coastlines where geom && !bbox!) as q",
+      connection: @connection,
+      srid: 900913,
+      geometry: {
+        "geom" => { type: :polygon }
+      },
+      bbox: "geom"
     )
     
-    maker.sources << Cover::Sources::PostGIS.new(
-      standard_planet_options.merge(
-        table: "(select * from planet_osm_line where (\"waterway\" = 'river' or highway in ('motorway', 'trunk', 'primary', 'secondary') or admin_level <> '' or route = 'ferry') and ST_Length(way) > !granule! * 64) as p",
-        geometry_type: :line,
-        simplify: 16,
-        zoom: [10, 12]
-      )
+    # Medium zoom sources
+    
+    medium_zoom_point_source = Cover::Source.new(
+      "(select osm_id, way, tags from planet_osm_point where place in ('city', 'town') or \"natural\" = 'peak') as q",
+      connection: @connection,
+      srid: 900913,
+      geometry: {
+        "way" => { type: :point, simplify: 16 }
+      },
+      bbox: "way"
     )
     
-    maker.sources << Cover::Sources::PostGIS.new(
-      standard_planet_options.merge(
-        table: "(select * from planet_osm_point where place in ('city', 'town') or \"natural\" = 'peak') as p",
-        geometry_type: :point,
-        zoom: [10, 12]
-      )
+    medium_zoom_line_source = Cover::Source.new(
+      "(select osm_id, way, tags, ST_PointOnSurface(way) as point from planet_osm_line where (\"waterway\" = 'river' or highway in ('motorway', 'trunk', 'primary', 'secondary') or admin_level <> '' or route = 'ferry') and ST_Length(way) > :unit::float * 64) as q",
+      connection: @connection,
+      srid: 900913,
+      geometry: {
+        "way" => { type: :line, simplify: 16 },
+        "point" => { type: :point }
+      },
+      bbox: "way"
     )
     
-    maker
+    medium_zoom_polygon_source = Cover::Source.new(
+      "(select osm_id, way, tags, ST_PointOnSurface(ST_Buffer(way, 0)) as point from planet_osm_polygon where (\"natural\" in ('water', 'wood', 'land', 'beach', 'bay') or \"landuse\" in ('forest', 'residential') or waterway in ('lake', 'river') or boundary in ('administrative', 'protected_area', 'national_park')) and ST_Area(way) > :unit::float * :unit::float * 256 * 256) as q",
+      connection: @connection,
+      srid: 900913,
+      geometry: {
+        "way" => { type: :polygon, simplify: 16 },
+        "point" => { type: :point }
+      },
+      bbox: "way"
+    )
+    
+    # Low zoom sources
+    
+    low_zoom_coastline_source = Cover::Source.new(
+      "(select ST_Union(ST_Buffer(geom, 0)) as geom from coastlines where geom && !bbox! and ST_Area(geom) > :unit::float * :unit::float * 32 * 32) as c",
+      connection: @connection,
+      srid: 900913,
+      geometry: {
+        "geom" => { type: :polygon, simplify: 16 }
+      },
+      bbox: "geom"
+    )
+    
+    # Builders
+    
+    point_builder = Cover::Builder.new do |row|
+      {
+        "id" => row["osm_id"],
+        "type" => "osm",
+        "tags" => row["tags"],
+        "geometry" => row["way"]
+      }
+    end
+    
+    line_polygon_builder = Cover::Builder.new do |row|
+      if row["way"]["type"] == "GeometryCollection"
+        nil
+      else
+        {
+          "id" => row["osm_id"],
+          "type" => "osm",
+          "tags" => row["tags"],
+          "geometry" => row["way"],
+          "kothic:reprpoint" => row["point"]["coordinates"]
+        }
+      end
+    end
+    
+    coastline_builder = Cover::Builder.new do |row|
+      if row["geom"]["type"] == "GeometryCollection"
+        nil
+      else
+        {
+          "type" => "coastline",
+          "geometry" => row["geom"]
+        }
+      end
+    end
+    
+    # Maker
+    
+    Cover::Maker.new(scale: 8192) do |index, features|
+      
+      if index.z > 13
+        
+        features.make(high_zoom_coastline_source, coastline_builder)
+        features.make(high_zoom_polygon_source, line_polygon_builder)
+        features.make(high_zoom_line_source, line_polygon_builder)
+        features.make(high_zoom_point_source, point_builder)
+        
+      elsif index.z > 9
+        
+        features.make(low_zoom_coastline_source, coastline_builder)
+        features.make(medium_zoom_polygon_source, line_polygon_builder)
+        features.make(medium_zoom_line_source, line_polygon_builder)
+        features.make(medium_zoom_point_source, point_builder)
+        
+      else
+        
+        features.make(low_zoom_coastline_source, coastline_builder)
+        
+      end
+  
+    end
     
   end
 
 end
+
+Cover.config = Basic.new

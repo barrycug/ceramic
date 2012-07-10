@@ -3,37 +3,35 @@ require "rubygems"
 
 $LOAD_PATH << "./#{File.dirname(__FILE__)}/../lib"
 $LOAD_PATH << "./#{File.dirname(__FILE__)}/../vendor"
-require "trollop"
 require "cover"
-require "./#{File.dirname(__FILE__)}/../debug/debug"
 
-options = Trollop::options do
-  opt :config, "Configuration file (.rb)", :type => :string
+def usage
+  puts "Usage: script/tile <config>.rb z/x/y"
+  exit
 end
 
-options[:tile] = ARGV[0]
-
-if options[:tile] == nil
-  Trollop::die "must specify a tile index"
+if ARGV.size != 2
+  usage
 end
 
-if options[:config] == nil
-  Trollop::die "must specify either a config file with --config"
-end
+options = {
+  config: ARGV[0],
+  tile: ARGV[1]
+}
 
-index = nil
-
-begin
-  index = Cover::Index.from_string(options[:tile])
+index = begin
+  Cover::Index.from_string(options[:tile])
 rescue ArgumentError
-  Trollop::die "tile index must be of the form z/x/y"
+  usage
 end
 
 require File.expand_path(options[:config])
-  
-config = Object.const_get(::File.basename(options[:config], '.rb').capitalize).new
-config.setup
 
-puts config.maker.render_tile(index)
+if !Cover.config.respond_to?(:maker)
+  puts "Config file must assign to Cover.config an object which responds to #maker"
+  exit
+end
 
-config.teardown
+Cover.config.setup
+puts Cover.config.maker.render_tile(index)
+Cover.config.teardown

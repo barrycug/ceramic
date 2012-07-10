@@ -1,1 +1,0 @@
-require "cover/sources/postgis"

@@ -9,15 +9,19 @@ require "cover"
 require "./#{File.dirname(__FILE__)}/../viewer/viewer"
 
 options = Trollop::options do
-  opt :config, "Configuration file (.rb)", :type => :string
-  opt :tileset, "Tileset file (.mbtiles)", :type => :string
   opt :center, "Initial map center (lat,lon,zoom)", :type => :string
   opt :port, "Port", :type => :integer, :default => 3857
   opt :host, "Host", :type => :string, :default => "0.0.0.0"
 end
 
-if options[:tileset] == nil && options[:config] == nil
-  Trollop::die "must specify either a config file with --config or a tileset file with --tileset"
+if ARGV.size == 0
+  Trollop::die "must specify either a config file (*.rb) or a tileset file (*.mbtiles, etc.)"
+end
+
+if ARGV[0] =~ /.+\.rb$/
+  options[:config] = ARGV[0]
+else
+  options[:tileset] = ARGV[0]
 end
 
 if options[:tileset]
@@ -40,11 +44,15 @@ else
   
   require File.expand_path(options[:config])
   
-  config = Object.const_get(::File.basename(options[:config], '.rb').capitalize).new
-  config.setup
+  if !Cover.config.respond_to?(:maker)
+    puts "Config file must assign to Cover.config an object which responds to #maker"
+    exit
+  end
+  
+  Cover.config.setup if Cover.config.respond_to?(:setup)
 
   Rack::Server.start(
-    :app => Cover::Viewer.new(options.merge(maker: config.maker)),
+    :app => Cover::Viewer.new(options.merge(maker: Cover.config.maker)),
     :Host => options[:host],
     :Port => options[:port]
   )

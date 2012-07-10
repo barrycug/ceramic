@@ -65,6 +65,36 @@
       });
       
       
+      // Inspect popup
+      
+      var popup = new L.Popup();
+      
+      map.on("zoomend", function() {
+        map.closePopup();
+      });
+      
+      map.on("click", function(e) {
+        
+        // Get pixel position
+        
+        var position = map.project(e.latlng);
+        
+        // Get index path
+        
+        var index = map.getZoom() + "/" +
+                    Math.floor(position.x / 256) + "/" +
+                    Math.floor(position.y / 256);
+                    
+        // Display popup
+        
+        popup.setLatLng(e.latlng);
+        popup.setContent("Inspect tile: <a href=\"/" + index + "/inspect\">" + index + "</a>");
+        
+        map.openPopup(popup);
+        
+      });
+      
+      
       // Mapnik underlay
       
       var mapnik = new L.TileLayer("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");

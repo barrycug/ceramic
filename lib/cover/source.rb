@@ -7,8 +7,12 @@ module Cover
     def initialize(table, options = {})
     
       @table = table
+      
       @connection = options[:connection]
-      @options = options
+      @geometry_column_options = options[:geometry]
+      @type_conversions = options[:convert] || {}
+      @bbox_column = options[:bbox]
+      @geometry_srid = options[:srid]
     
     end
   
@@ -22,24 +26,12 @@ module Cover
     
       result = @connection.exec(*arguments)
     
-      # Get the types of columns
-    
-      types = {}
-    
-      result.num_fields.times do |i|
-        types[result.fname(i)] = @connection.exec("SELECT format_type($1, $2)", [result.ftype(i), result.fmod(i)]).getvalue(0, 0)
-      end
-    
       # Process tuples and return rows
     
       # For any geometry columns that were declared, record what their GeoJSON
       # counterparts are named.
     
-      geometry = @options[:geometry].map do |column, _|
-        column
-      end
-    
-      geometry_json = @options[:geometry].inject({}) do |hash, (column, _)|
+      geometry_json = @geometry_column_options.inject({}) do |hash, (column, _)|
         hash[column + "_geometry_json"] = column
         hash
       end
@@ -49,6 +41,7 @@ module Cover
       # - parse its JSON and output the resulting hash using the original
       #   geometry column's name, since it is one of our GeoJSON columns
       # - parse it as hstore and output it as a hash
+      # - parse it as an integer and output as an integer
       # - output it as-is
     
       result.map do |tuple|
@@ -57,16 +50,14 @@ module Cover
       
         tuple.each do |column, value|
         
-          if @options[:geometry].has_key?(column)
+          if @geometry_column_options.has_key?(column)
             next
           elsif geometry_json.has_key?(column)
             row[geometry_json[column]] = JSON.parse(tuple[column])
-          elsif types[column] == "hstore"
+          elsif @type_conversions[column] == :hstore
             row[column] = hash_from_hstore(value)
-          elsif types[column] == "integer"
+          elsif @type_conversions[column] == :integer
             row[column] = value.to_i
-          elsif types[column] == "real"
-            row[column] = value.to_f
           else
             row[column] = value
           end
@@ -85,7 +76,7 @@ module Cover
     
       columns = ["*"]
     
-      @options[:geometry].each do |column, column_options|
+      @geometry_column_options.each do |column, column_options|
       
         case column_options[:type]
         when :point
@@ -104,8 +95,8 @@ module Cover
     
       # set intersects condition if the bbox option is specified
     
-      if @options[:bbox]
-        conditions = "WHERE #{quote(@options[:bbox])} && #{build_envelope}"
+      if @bbox_column
+        conditions = "WHERE #{quote(@bbox_column)} && #{build_envelope}"
       else
         conditions = ""
       end
@@ -116,7 +107,7 @@ module Cover
     
       # calculate parameters
     
-      bbox = index.bbox(@options[:srid])
+      bbox = index.bbox(@geometry_srid)
     
       parameters = {
         "translate_x" => -bbox[:left],
@@ -128,7 +119,7 @@ module Cover
         "right" => bbox[:right],
         "bottom" => bbox[:bottom],
         "unit" => bbox[:width] / scale.to_f,
-        "srid" => @options[:srid]
+        "srid" => @geometry_srid
       }
     
       # build [query, parameters] from the query and named parameters
@@ -221,7 +212,7 @@ module Cover
       end
     
       def quote(column)
-        @options[:connection].quote_ident(column)
+        @connection.quote_ident(column)
       end
     
       # Adapted from activerecord-postgres-hstore

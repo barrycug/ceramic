@@ -19,7 +19,11 @@ class Basic
       geometry: {
         "way" => { type: :point }
       },
-      bbox: "way"
+      bbox: "way",
+      convert: {
+        "osm_id" => :integer,
+        "tags" => :hstore
+      }
     )
     
     high_zoom_line_source = Cover::Source.new(
@@ -30,7 +34,11 @@ class Basic
         "way" => { type: :line },
         "point" => { type: :point }
       },
-      bbox: "way"
+      bbox: "way",
+      convert: {
+        "osm_id" => :integer,
+        "tags" => :hstore
+      }
     )
     
     high_zoom_polygon_source = Cover::Source.new(
@@ -41,7 +49,11 @@ class Basic
         "way" => { type: :polygon },
         "point" => { type: :point }
       },
-      bbox: "way"
+      bbox: "way",
+      convert: {
+        "osm_id" => :integer,
+        "tags" => :hstore
+      }
     )
     
     high_zoom_coastline_source = Cover::Source.new(
@@ -63,7 +75,11 @@ class Basic
       geometry: {
         "way" => { type: :point, simplify: 16 }
       },
-      bbox: "way"
+      bbox: "way",
+      convert: {
+        "osm_id" => :integer,
+        "tags" => :hstore
+      }
     )
     
     medium_zoom_line_source = Cover::Source.new(
@@ -74,7 +90,11 @@ class Basic
         "way" => { type: :line, simplify: 16 },
         "point" => { type: :point }
       },
-      bbox: "way"
+      bbox: "way",
+      convert: {
+        "osm_id" => :integer,
+        "tags" => :hstore
+      }
     )
     
     medium_zoom_polygon_source = Cover::Source.new(
@@ -85,7 +105,11 @@ class Basic
         "way" => { type: :polygon, simplify: 16 },
         "point" => { type: :point }
       },
-      bbox: "way"
+      bbox: "way",
+      convert: {
+        "osm_id" => :integer,
+        "tags" => :hstore
+      }
     )
     
     # Low zoom sources

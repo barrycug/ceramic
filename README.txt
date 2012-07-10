@@ -19,7 +19,7 @@ Coastline data may be imported as follows:
 
   wget http://tile.openstreetmap.org/processed_p.tar.bz2
   tar xjf processed_p.tar.bz2
-  shp2pgsql -s 900913 -I processed_p.shp coastlines | psql -d gis > /dev/null
+  shp2pgsql -s 900913 -I -g geom processed_p.shp coastlines | psql -d gis > /dev/null
 
 
 script/view

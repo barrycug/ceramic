@@ -58,6 +58,8 @@ module Cover
             row[column] = hash_from_hstore(value)
           elsif @type_conversions[column] == :integer
             row[column] = value.to_i
+          elsif @type_conversions[column] == :real
+            row[column] = value.to_f
           else
             row[column] = value
           end

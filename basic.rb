@@ -13,7 +13,7 @@ class Basic
     # High zoom sources
     
     high_zoom_point_source = Cover::Source.new(
-      "(select osm_id, way, tags from planet_osm_point) as q",
+      "(select osm_id, way, tags, z_order from planet_osm_point) as q",
       connection: @connection,
       srid: 900913,
       geometry: {
@@ -22,12 +22,13 @@ class Basic
       bbox: "way",
       convert: {
         "osm_id" => :integer,
-        "tags" => :hstore
+        "tags" => :hstore,
+        "z_order" => :integer
       }
     )
     
     high_zoom_line_source = Cover::Source.new(
-      "(select osm_id, way, tags, ST_PointOnSurface(way) as point from planet_osm_line) as q",
+      "(select osm_id, way, ST_PointOnSurface(way) as point, tags, z_order from planet_osm_line) as q",
       connection: @connection,
       srid: 900913,
       geometry: {
@@ -37,12 +38,13 @@ class Basic
       bbox: "way",
       convert: {
         "osm_id" => :integer,
-        "tags" => :hstore
+        "tags" => :hstore,
+        "z_order" => :integer
       }
     )
     
     high_zoom_polygon_source = Cover::Source.new(
-      "(select osm_id, way, tags, ST_PointOnSurface(ST_Buffer(way, 0)) as point from planet_osm_polygon) as q",
+      "(select osm_id, way, ST_PointOnSurface(ST_Buffer(way, 0)) as point, way_area, z_order, tags from planet_osm_polygon) as q",
       connection: @connection,
       srid: 900913,
       geometry: {
@@ -52,7 +54,9 @@ class Basic
       bbox: "way",
       convert: {
         "osm_id" => :integer,
-        "tags" => :hstore
+        "tags" => :hstore,
+        "way_area" => :real,
+        "z_order" => :integer
       }
     )
     
@@ -69,7 +73,7 @@ class Basic
     # Medium zoom sources
     
     medium_zoom_point_source = Cover::Source.new(
-      "(select osm_id, way, slice(tags, ARRAY['place', 'natural', 'name']) as tags from planet_osm_point where place in ('city', 'town') or \"natural\" = 'peak') as q",
+      "(select * from planet_osm_point where place in ('city', 'town') or \"natural\" = 'peak') as q",
       connection: @connection,
       srid: 900913,
       geometry: {
@@ -78,12 +82,12 @@ class Basic
       bbox: "way",
       convert: {
         "osm_id" => :integer,
-        "tags" => :hstore
+        "z_order" => :integer
       }
     )
     
     medium_zoom_line_source = Cover::Source.new(
-      "(select osm_id, way, slice(tags, ARRAY['waterway', 'highway', 'admin_level', 'route', 'name']) as tags, ST_PointOnSurface(way) as point from planet_osm_line where (\"waterway\" = 'river' or highway in ('motorway', 'trunk', 'primary', 'secondary') or admin_level <> '' or route = 'ferry') and ST_Length(way) > :unit::float * 64) as q",
+      "(select *, ST_PointOnSurface(way) as point from planet_osm_line where (\"waterway\" = 'river' or highway in ('motorway', 'trunk', 'primary', 'secondary') or admin_level <> '' or route = 'ferry') and ST_Length(way) > :unit::float * 64) as q",
       connection: @connection,
       srid: 900913,
       geometry: {
@@ -93,12 +97,12 @@ class Basic
       bbox: "way",
       convert: {
         "osm_id" => :integer,
-        "tags" => :hstore
+        "z_order" => :integer
       }
     )
     
     medium_zoom_polygon_source = Cover::Source.new(
-      "(select osm_id, way, slice(tags, ARRAY['natural', 'landuse', 'waterway', 'boundary', 'name']) as tags, ST_PointOnSurface(ST_Buffer(way, 0)) as point from planet_osm_polygon where (\"natural\" in ('water', 'wood', 'land', 'beach', 'bay') or \"landuse\" in ('forest', 'residential') or waterway in ('lake', 'river') or boundary in ('administrative', 'protected_area', 'national_park')) and ST_Area(way) > :unit::float * :unit::float * 256 * 256) as q",
+      "(select *, ST_PointOnSurface(ST_Buffer(way, 0)) as point from planet_osm_polygon where (\"natural\" in ('water', 'wood', 'land', 'beach', 'bay') or \"landuse\" in ('forest', 'residential') or waterway in ('lake', 'river') or boundary in ('administrative', 'protected_area', 'national_park')) and ST_Area(way) > :unit::float * :unit::float * 256 * 256) as q",
       connection: @connection,
       srid: 900913,
       geometry: {
@@ -108,7 +112,8 @@ class Basic
       bbox: "way",
       convert: {
         "osm_id" => :integer,
-        "tags" => :hstore
+        "way_area" => :real,
+        "z_order" => :integer
       }
     )
     
@@ -127,44 +132,90 @@ class Basic
     # Builders
     
     point_builder = Cover::Builder.new do |row|
-      {
+      
+      result = {
         "id" => row["osm_id"],
         "type" => "osm",
-        "tags" => row["tags"],
-        "geometry" => row["way"]
+        "geometry" => row["way"],
+        "z_order" => row["z_order"]
       }
+      
+      # Add tags as-is if it's a hash (because we converted
+      # an hstore column), otherwise add all the other keys
+      # from the row to the tags.
+      
+      if row["tags"].is_a?(Hash)
+        result["tags"] = row["tags"]
+      else
+        result["tags"] = row.select do |k, v|
+          !["way", "osm_id", "tags", "z_order"].include?(k) && v != nil
+        end
+      end
+      
+      result
+      
     end
     
     line_polygon_builder = Cover::Builder.new do |row|
+      
       if row["way"]["type"] == "GeometryCollection"
+        
         nil
+        
       else
-        {
+      
+        result = {
           "id" => row["osm_id"],
           "type" => "osm",
-          "tags" => row["tags"],
           "geometry" => row["way"],
-          "kothic:reprpoint" => row["point"]["coordinates"]
+          "reprpoint" => row["point"]["coordinates"],
+          "z_order" => row["z_order"]
         }
+      
+        # Add way_area if present (for polygons)
+      
+        if row["way_area"]
+          result["way_area"] = row["way_area"]
+        end
+      
+        # As in point_builder --
+      
+        if row["tags"].is_a?(Hash)
+          result["tags"] = row["tags"]
+        else
+          result["tags"] = row.select do |k, v|
+            !["way", "osm_id", "tags", "point", "way_area", "z_order"].include?(k) && v != nil
+          end
+        end
+      
+        result
+        
       end
+      
     end
     
     coastline_builder = Cover::Builder.new do |row|
+      
       if row["geom"]["type"] == "GeometryCollection"
+        
         nil
+        
       else
+      
         {
           "type" => "coastline",
           "geometry" => row["geom"]
         }
+        
       end
+      
     end
     
     # Maker
     
     Cover::Maker.new(scale: 8192) do |index, features|
       
-      if index.z >= 11
+      if index.z >= 13
         
         features.make(high_zoom_coastline_source, coastline_builder)
         features.make(high_zoom_polygon_source, line_polygon_builder)

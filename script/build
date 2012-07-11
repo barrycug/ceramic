@@ -93,7 +93,7 @@ indices.each_with_index do |index, i|
   data = Cover.config.maker.render_tile(index)
   tileset.insert_tile(index, Zlib.deflate(data, 9))
   
-  log.debug "#{i+1} tiles rendered (last was #{index.z}/#{index.x}/#{index.y})"
+  log.debug "#{i+1} tiles rendered (last was #{index.z}/#{index.x}/#{index.y}, #{data.bytesize} bytes)"
 end
 
 # Vacuum/analyze and close databases

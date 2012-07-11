@@ -1,0 +1,104 @@
+#!/usr/bin/env ruby
+require "rubygems"
+require "rack"
+require "logger"
+require "zlib"
+
+$LOAD_PATH << "./#{File.dirname(__FILE__)}/../lib"
+$LOAD_PATH << "./#{File.dirname(__FILE__)}/../vendor"
+require "trollop"
+require "cover"
+
+options = Trollop::options do
+  opt :bbox, "Tile bounding box (for example: 31.9 -125.3 42.4 -113.6)", :type => :floats, :required => true
+  opt :zoom, "Zoom levels (for example: 10 12 14)", :type => :integers, :required => true
+  opt :config, "Configuration file", :type => :string, :required => true
+end
+
+if ARGV.size != 1
+  Trollop::die "must specify an output path for the tileset"
+end
+
+options[:output] = ARGV[0]
+
+if options[:bbox].size != 4
+  Trollop::die "must specify bbox as minlat minlon maxlat maxlon"
+end
+
+if options[:bbox][0] >= options[:bbox][2] || options[:bbox][1] >= options[:bbox][3]
+  Trollop::die "must specify bbox as minlat minlon maxlat maxlon"
+end
+
+# Logger
+
+log = Logger.new(STDOUT)
+
+# Load config
+
+require File.expand_path(options[:config])
+  
+if !Cover.config.respond_to?(:maker)
+  puts "Config file must assign to Cover.config an object which responds to #maker"
+  exit
+end
+
+# Build the list of tiles
+
+log.info "Building list of indices..."
+
+indices = []
+
+mercator = GlobalMercator.new(256)
+
+mminx, mminy = mercator.lat_lon_to_meters(options[:bbox][0], options[:bbox][1])
+mmaxx, mmaxy = mercator.lat_lon_to_meters(options[:bbox][2], options[:bbox][3])
+
+options[:zoom].each do |tz|
+
+  tminx, tminy = mercator.meters_to_tile(mminx, mminy, tz)
+  tmaxx, tmaxy = mercator.meters_to_tile(mmaxx, mmaxy, tz)
+
+  (tminy..tmaxy).each do |ty|
+    (tminx..tmaxx).each do |tx|
+      indices << Cover::Index.new(tz, *mercator.google_tile(tx, ty, tz))
+    end
+  end
+  
+end
+
+log.info "#{indices.size} indices built"
+
+# Set up to rendering and store the files
+
+Cover.config.setup
+
+database = SQLite3::Database.new(options[:output])
+tileset = Cover::Tileset.new(database)
+
+tileset.create_schema
+tileset.set_metadata(
+  format: "js.deflate"
+)
+
+# Render the tiles
+
+log.info "Rendering tiles..."
+
+indices.each_with_index do |index, i|
+  data = Cover.config.maker.render_tile(index)
+  tileset.insert_tile(index, Zlib.deflate(data, 9))
+  
+  if i > 0 && i % 100 == 0
+    log.info "#{i} tiles rendered (last was #{index.z}/#{index.x}/#{index.y})"
+  end
+end
+
+# Vacuum/analyze and close databases
+
+log.info "Optimizing database..."
+
+tileset.optimize
+
+database.close
+
+Cover.config.teardown

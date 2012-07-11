@@ -27,6 +27,12 @@ module Cover
   
     get "/:z/:x/:y" do
       
+      hash = get_hash(params[:z], params[:x], params[:y])
+      
+      if hash != nil
+        etag hash
+      end
+      
       tile = fetch_tile(params[:z], params[:x], params[:y])
       
       if tile
@@ -72,6 +78,21 @@ module Cover
         else
           
           @maker.render_tile(index)
+          
+        end
+        
+      end
+      
+      def get_hash(z, x, y)
+        
+        if @tileset
+          
+          index = Cover::Index.new(z.to_i, x.to_i, y.to_i)
+          @tileset.select_hash(index)
+          
+        else
+          
+          nil
           
         end
         

@@ -96,6 +96,14 @@ SELECT tile_data FROM tiles WHERE zoom_level = :z AND tile_column = :x AND tile_
 END
 
     end
+    
+    def select_hash(index)
+      
+      @database.get_first_value <<-END, { "z" => index.z, "x" => index.x, "y" => index.y }
+SELECT tile_id FROM map WHERE zoom_level = :z AND tile_column = :x AND tile_row = :y
+END
+      
+    end
   
     def optimize
       

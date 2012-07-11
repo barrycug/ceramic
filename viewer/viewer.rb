@@ -25,6 +25,14 @@ module Cover
     
     end
   
+    get "/" do
+      erb :index
+    end
+  
+    get "/kothic" do
+      erb :kothic
+    end
+  
     get "/:z/:x/:y" do
       
       hash = get_hash(params[:z], params[:x], params[:y])
@@ -47,10 +55,6 @@ module Cover
     get "/:z/:x/:y/inspect" do
       @tile = fetch_tile(params[:z], params[:x], params[:y])
       erb :inspect
-    end
-  
-    get "/" do
-      erb :index
     end
   
     protected

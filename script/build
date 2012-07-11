@@ -13,6 +13,11 @@ options = Trollop::options do
   opt :bbox, "Tile bounding box (for example: 31.9 -125.3 42.4 -113.6)", :type => :floats, :required => true
   opt :zoom, "Zoom levels (for example: 10 12 14)", :type => :integers, :required => true
   opt :config, "Configuration file", :type => :string, :required => true
+  opt :log, "Log file", :type => :string
+end
+
+if options[:log] == nil
+  options[:log] = STDOUT
 end
 
 if ARGV.size != 1
@@ -31,7 +36,7 @@ end
 
 # Logger
 
-log = Logger.new(STDOUT)
+log = Logger.new(options[:log])
 
 # Load config
 
@@ -66,7 +71,7 @@ options[:zoom].each do |tz|
   
 end
 
-log.info "#{indices.size} indices built"
+log.info "#{indices.size} indices"
 
 # Set up to rendering and store the files
 
@@ -88,9 +93,7 @@ indices.each_with_index do |index, i|
   data = Cover.config.maker.render_tile(index)
   tileset.insert_tile(index, Zlib.deflate(data, 9))
   
-  if i > 0 && i % 100 == 0
-    log.info "#{i} tiles rendered (last was #{index.z}/#{index.x}/#{index.y})"
-  end
+  log.debug "#{i+1} tiles rendered (last was #{index.z}/#{index.x}/#{index.y})"
 end
 
 # Vacuum/analyze and close databases

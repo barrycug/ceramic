@@ -44,7 +44,7 @@ module Cover
       # - parse it as an integer and output as an integer
       # - output it as-is
     
-      result.map do |tuple|
+      rows = result.map do |tuple|
       
         row = {}
       
@@ -67,6 +67,12 @@ module Cover
         row
       
       end
+      
+      # Clear the result
+      
+      result.clear
+      
+      rows
     
     end
   

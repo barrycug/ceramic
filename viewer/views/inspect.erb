@@ -11,7 +11,7 @@
     
     <canvas id="draw" width="1024" height="1024"></canvas>
     
-    <script src="/render.js"></script>
+    <script src="/debug_render.js"></script>
     <script>
     
       var data = <%= @tile %>;
@@ -21,7 +21,7 @@
       
       // draw the tile data
       
-      renderTile(canvas, data);
+      DebugRender.renderTile(canvas, data);
       
       // draw grid
       

@@ -100,17 +100,21 @@
       
       // OSM base layer
       
-      var osm = new L.TileLayer("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
+      var osm = new L.TileLayer("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "Map images and data &copy; OpenStreetMap contributors"
+      });
       
       
-      // Canvas tiles
+      // Canvas tiles (overlay)
       
       var canvasDebugLayer = new CanvasDebugLayer("/{z}/{x}/{y}");
       
       
       // Kothic
       
-      var kothic = new KothicLayer("/{z}/{x}/{y}");
+      var kothic = new KothicLayer("/{z}/{x}/{y}", {
+        attribution: "Rendering by <a href=\"http://github.com/kothic/kothic-js\">Kothic JS</a>"
+      });
       
       
       // Load MapCSS images for Kothic...

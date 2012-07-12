@@ -21,7 +21,7 @@
     <div id="map"></div>
     
     <script src="/leaflet/leaflet.js"></script>
-    <script src="/render.js"></script>
+    <script src="/canvas_debug_layer.js"></script>
     <script>
     
       // "Default" options (possibly from command-line arguments)
@@ -104,35 +104,9 @@
       
       // Canvas tiles
       
-      var canvasTiles = new L.TileLayer.Canvas();
-
-      canvasTiles.drawTile = function(canvas, tilePoint, zoom) {
-        
-        // draw "loading" overlay
-        
-        var context = canvas.getContext("2d");
-        
-        context.fillStyle = "rgba(255, 255, 255, 0.5)";
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // load the tile
-        
-        var request = new XMLHttpRequest();
-        
-        request.onreadystatechange = function() {
-          if (this.readyState == this.DONE) {
-            if (this.status == 200 && this.responseText) {
-              renderTile(canvas, JSON.parse(this.responseText));
-            }
-          }
-        }
-        
-        request.open("GET", "/" + zoom + "/" + tilePoint.x + "/" + tilePoint.y, true);
-        request.send();
-        
-      }
+      var canvasDebugLayer = new CanvasDebugLayer("/{z}/{x}/{y}");
       
-      map.addLayer(canvasTiles);
+      map.addLayer(canvasDebugLayer);
       
     </script>
     

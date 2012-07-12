@@ -22,6 +22,9 @@
     
     <script src="/leaflet/leaflet.js"></script>
     <script src="/canvas_debug_layer.js"></script>
+    <script src="/kothic.js"></script>
+    <script src="/osmosnimki.js"></script>
+    <script src="/kothic_layer.js"></script>
     <script>
     
       // "Default" options (possibly from command-line arguments)
@@ -95,18 +98,46 @@
       });
       
       
-      // Mapnik underlay
+      // OSM base layer
       
-      var mapnik = new L.TileLayer("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
-      
-      map.addLayer(mapnik);
+      var osm = new L.TileLayer("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png");
       
       
       // Canvas tiles
       
       var canvasDebugLayer = new CanvasDebugLayer("/{z}/{x}/{y}");
       
-      map.addLayer(canvasDebugLayer);
+      
+      // Kothic
+      
+      var kothic = new KothicLayer("/{z}/{x}/{y}");
+      
+      
+      // Load MapCSS images for Kothic...
+      
+      MapCSS.preloadSpriteImage("osmosnimki-maps", "osmosnimki.png");
+      
+      
+      // After the MapCSS images load, add the layers and set
+      // up the layer control.
+      
+      MapCSS.onImagesLoad = function() {
+        
+        map.addLayer(osm);
+        map.addLayer(canvasDebugLayer);
+        
+        var layersControl = new L.Control.Layers({
+          "OpenStreetMap": osm,
+          "Kothic": kothic
+        }, {
+          "Debug": canvasDebugLayer
+        }, {
+          collapsed: false
+        });
+
+        map.addControl(layersControl);
+        
+      }
       
     </script>
     

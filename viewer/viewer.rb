@@ -29,10 +29,6 @@ module Cover
       erb :index
     end
   
-    get "/kothic" do
-      erb :kothic
-    end
-  
     get "/:z/:x/:y" do
       
       hash = get_hash(params[:z], params[:x], params[:y])

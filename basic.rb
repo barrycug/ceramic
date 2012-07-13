@@ -13,7 +13,7 @@ class Basic
     # High zoom sources
     
     high_zoom_point_source = Cover::Source.new(
-      "(select osm_id, way, tags, z_order from planet_osm_point) as q",
+      "(select * from planet_osm_point) as q",
       connection: @connection,
       srid: 900913,
       geometry: {
@@ -22,13 +22,12 @@ class Basic
       bbox: "way",
       convert: {
         "osm_id" => :integer,
-        "tags" => :hstore,
-        "z_order" => :integer
+        "tags" => :hstore
       }
     )
     
     high_zoom_line_source = Cover::Source.new(
-      "(select osm_id, way, ST_PointOnSurface(way) as point, tags, z_order from planet_osm_line) as q",
+      "(select *, ST_PointOnSurface(way) as point from planet_osm_line) as q",
       connection: @connection,
       srid: 900913,
       geometry: {
@@ -38,13 +37,12 @@ class Basic
       bbox: "way",
       convert: {
         "osm_id" => :integer,
-        "tags" => :hstore,
-        "z_order" => :integer
+        "tags" => :hstore
       }
     )
     
     high_zoom_polygon_source = Cover::Source.new(
-      "(select osm_id, way, ST_PointOnSurface(ST_Buffer(way, 0)) as point, way_area, z_order, tags from planet_osm_polygon) as q",
+      "(select *, ST_PointOnSurface(ST_Buffer(way, 0)) as point from planet_osm_polygon) as q",
       connection: @connection,
       srid: 900913,
       geometry: {
@@ -55,8 +53,7 @@ class Basic
       convert: {
         "osm_id" => :integer,
         "tags" => :hstore,
-        "way_area" => :real,
-        "z_order" => :integer
+        "way_area" => :real
       }
     )
     
@@ -81,8 +78,7 @@ class Basic
       },
       bbox: "way",
       convert: {
-        "osm_id" => :integer,
-        "z_order" => :integer
+        "osm_id" => :integer
       }
     )
     
@@ -96,8 +92,7 @@ class Basic
       },
       bbox: "way",
       convert: {
-        "osm_id" => :integer,
-        "z_order" => :integer
+        "osm_id" => :integer
       }
     )
     
@@ -112,8 +107,7 @@ class Basic
       bbox: "way",
       convert: {
         "osm_id" => :integer,
-        "way_area" => :real,
-        "z_order" => :integer
+        "way_area" => :real
       }
     )
     
@@ -137,18 +131,20 @@ class Basic
         "id" => row["osm_id"],
         "type" => "osm",
         "geometry" => row["way"],
-        "z_order" => row["z_order"]
+        "tags" => {}
       }
       
-      # Add tags as-is if it's a hash (because we converted
-      # an hstore column), otherwise add all the other keys
-      # from the row to the tags.
+      # Add tags as-is if it's a hash
       
       if row["tags"].is_a?(Hash)
-        result["tags"] = row["tags"]
-      else
-        result["tags"] = row.select do |k, v|
-          !["way", "osm_id", "tags", "z_order"].include?(k) && v != nil
+        result["tags"].update(row["tags"])
+      end
+      
+      # include other values from the row
+      
+      row.each do |name, value|
+        unless ["osm_id", "way", "tags", "z_order"].include?(name)
+          result["tags"][name] = value
         end
       end
       
@@ -169,7 +165,7 @@ class Basic
           "type" => "osm",
           "geometry" => row["way"],
           "reprpoint" => row["point"]["coordinates"],
-          "z_order" => row["z_order"]
+          "tags" => {}
         }
       
         # Add way_area if present (for polygons)
@@ -177,14 +173,18 @@ class Basic
         if row["way_area"]
           result["way_area"] = row["way_area"]
         end
-      
-        # As in point_builder --
+        
+        # Add contents of tags if it's a hash
       
         if row["tags"].is_a?(Hash)
-          result["tags"] = row["tags"]
-        else
-          result["tags"] = row.select do |k, v|
-            !["way", "osm_id", "tags", "point", "way_area", "z_order"].include?(k) && v != nil
+          result["tags"].update(row["tags"])
+        end
+      
+        # Include other values from the row
+      
+        row.each do |name, value|
+          unless ["way", "osm_id", "tags", "point", "way_area", "z_order"].include?(name)
+            result["tags"][name] = value
           end
         end
       

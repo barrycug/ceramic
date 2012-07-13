@@ -42,7 +42,8 @@ module Cover
       
       if tile
         
-        # If the tile is already deflated, pass as-is with content-encoding set.
+        # If the tile is already deflated and the client will accept
+        # deflate, pass as-is with content-encoding set.
         
         if @format == "js.deflate"
           encoding = Rack::Utils.select_best_encoding(%w(deflate identity), request.accept_encoding)

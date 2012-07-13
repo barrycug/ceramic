@@ -60,7 +60,7 @@ class Basic
     high_zoom_coastline_source = Cover::Source.new(
       "(select ST_Union(ST_Buffer(geom, 0)) as geom from coastlines where geom && !bbox!) as q",
       connection: @connection,
-      srid: 900913,
+      srid: 3857,
       geometry: {
         "geom" => { type: :polygon }
       },
@@ -116,7 +116,7 @@ class Basic
     low_zoom_coastline_source = Cover::Source.new(
       "(select ST_Union(ST_Buffer(geom, 0)) as geom from coastlines where geom && !bbox! and ST_Area(geom) > :unit::float * :unit::float * 32 * 32) as c",
       connection: @connection,
-      srid: 900913,
+      srid: 3857,
       geometry: {
         "geom" => { type: :polygon, simplify: 16 }
       },

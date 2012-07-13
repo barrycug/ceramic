@@ -15,6 +15,7 @@ module Cover
         @format = @tileset.get_metadata["format"]
       else
         @maker = options[:maker]
+        @format = "js"
       end
 
       if options[:center] =~ /(\-?\d+(?:\.\d+)?),(\-?\d+(?:\.\d+)?),(\d+)/
@@ -40,10 +41,24 @@ module Cover
       tile = fetch_tile(params[:z], params[:x], params[:y])
       
       if tile
+        
+        # If the tile is already deflated, pass as-is with content-encoding set.
+        
+        if @format == "js.deflate"
+          encoding = Rack::Utils.select_best_encoding(%w(deflate identity), request.accept_encoding)
+          
+          if encoding == "deflate"
+            headers "Content-Encoding" => "deflate"
+          end
+        end
+        
         content_type :js
         tile
+        
       else
+        
         404
+        
       end
       
     end
@@ -66,11 +81,8 @@ module Cover
           
           data = @tileset.select_tile(index)
           
-          # Uncompress data if necessary.
-          # TODO: content negotiation
-          
-          if data != nil && @format == "js.deflate"
-            Zlib.inflate(data)
+          if data == nil
+            nil
           else
             data
           end

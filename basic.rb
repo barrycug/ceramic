@@ -143,9 +143,10 @@ class Basic
       # include other values from the row
       
       row.each do |name, value|
-        unless ["osm_id", "way", "tags", "z_order"].include?(name)
-          result["tags"][name] = value
-        end
+        next if %w(way osm_id tags z_order).include?(name)
+        next if value == nil
+        
+        result["tags"][name] = value
       end
       
       result
@@ -183,9 +184,10 @@ class Basic
         # Include other values from the row
       
         row.each do |name, value|
-          unless ["way", "osm_id", "tags", "point", "way_area", "z_order"].include?(name)
-            result["tags"][name] = value
-          end
+          next if %w(way osm_id tags point way_area z_order).include?(name)
+          next if value == nil
+          
+          result["tags"][name] = value
         end
       
         result

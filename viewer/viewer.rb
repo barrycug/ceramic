@@ -64,8 +64,15 @@ module Cover
     end
     
     get "/:z/:x/:y/inspect" do
+      
       @tile = fetch_tile(params[:z], params[:x], params[:y])
+      
+      if @format == "js.deflate"
+        @tile = Zlib.inflate(@tile)
+      end
+      
       erb :inspect
+      
     end
   
     protected

@@ -17,6 +17,8 @@ var KothicLayer = L.TileLayer.Canvas.extend({
   },
   
   drawTile: function(canvas, tilePoint, zoom) {
+    
+    var zoomOffset = this.options.zoomOffset;
   
     // load the tile
   
@@ -26,14 +28,14 @@ var KothicLayer = L.TileLayer.Canvas.extend({
     request.onreadystatechange = function() {
       if (this.readyState == this.DONE) {
         if (this.status == 200 && this.responseText) {
-          layer._renderTile(canvas, JSON.parse(this.responseText), zoom);
+          layer._renderTile(canvas, JSON.parse(this.responseText), zoom + zoomOffset);
         }
       }
     }
     
     var url = this._url.replace("{x}", tilePoint.x).
                         replace("{y}", tilePoint.y).
-                        replace("{z}", zoom);
+                        replace("{z}", zoom + zoomOffset);
   
     request.open("GET", url, true);
     request.send();

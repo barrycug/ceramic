@@ -30,7 +30,7 @@ var CanvasDebugLayer = L.TileLayer.Canvas.extend({
     
     var url = this._url.replace("{x}", tilePoint.x).
                         replace("{y}", tilePoint.y).
-                        replace("{z}", zoom);
+                        replace("{z}", zoom + this.options.zoomOffset);
   
     request.open("GET", url, true);
     request.send();

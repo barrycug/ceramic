@@ -68,11 +68,19 @@ module Cover
       
       @tile = fetch_tile(params[:z], params[:x], params[:y])
       
-      if @format == "js.deflate"
-        @tile = Zlib.inflate(@tile)
-      end
+      if @tile
       
-      erb :inspect
+        if @format == "js.deflate"
+          @tile = Zlib.inflate(@tile)
+        end
+      
+        erb :inspect
+        
+      else
+        
+        404
+        
+      end
       
     end
   

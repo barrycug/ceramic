@@ -31,7 +31,7 @@ class Basic
       connection: @connection,
       srid: 900913,
       geometry: {
-        "way" => { type: :line },
+        "way" => { type: :line, simplify: 1 },
         "point" => { type: :point }
       },
       bbox: "way",
@@ -46,7 +46,7 @@ class Basic
       connection: @connection,
       srid: 900913,
       geometry: {
-        "way" => { type: :polygon },
+        "way" => { type: :polygon, simplify: 1 },
         "point" => { type: :point }
       },
       bbox: "way",
@@ -62,7 +62,7 @@ class Basic
       connection: @connection,
       srid: 3857,
       geometry: {
-        "geom" => { type: :polygon }
+        "geom" => { type: :polygon, simplify: 1 }
       },
       bbox: "geom"
     )

@@ -27,12 +27,18 @@ module Cover
         @list = []
       end
     
-      def make(source, builder)
+      def make(source, builder = nil)
         append(build(source, builder))
       end
   
-      def build(source, builder)
-        builder.build_features(source.select_rows(@index, @scale))
+      def build(source, builder = nil)
+        rows = source.select_rows(@index, @scale)
+        
+        if builder
+          builder.build_features(rows)
+        else
+          rows
+        end
       end
     
       def append(features)

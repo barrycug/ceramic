@@ -47,7 +47,7 @@ END
 
     end
   
-    def set_metadata(metadata)
+    def update_metadata(metadata)
       
       @database.transaction do |db|
         
@@ -63,7 +63,7 @@ END
       
     end
   
-    def get_metadata
+    def select_metadata
       
       metadata = {}
       

@@ -81,8 +81,10 @@ database = SQLite3::Database.new(options[:output])
 tileset = Cover::Tileset.new(database)
 
 tileset.create_schema
-tileset.set_metadata(
-  format: "js.deflate"
+tileset.update_metadata(
+  format: "js.deflate",
+  minzoom: options[:zoom].min,
+  maxzoom: options[:zoom].max
 )
 
 # Render the tiles

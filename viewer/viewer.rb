@@ -12,7 +12,7 @@ module Cover
       
       if options[:tileset]
         @tileset = options[:tileset]
-        @format = @tileset.get_metadata["format"]
+        @format = @tileset.select_metadata["format"]
       else
         @maker = options[:maker]
         @format = "js"
@@ -28,6 +28,27 @@ module Cover
   
     get "/" do
       erb :index
+    end
+    
+    get "/tiles.json" do
+      
+      if @tileset
+        metadata = @tileset.select_metadata
+      else
+        metadata = {}
+      end
+      
+      metadata.update({
+        "tilejson" => "2.0.0",
+        "tiles" => [
+          "/{z}/{x}/{y}"
+        ]
+      })
+      
+      content_type :js
+      
+      JSON.dump(metadata)
+      
     end
   
     get "/:z/:x/:y" do

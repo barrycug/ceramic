@@ -28,15 +28,25 @@
     <script src="/kothic_layer.js"></script>
     <script>
     
-      // "Default" options (possibly from command-line arguments)
+      // Default map options
       
-      var options = {
-        zoom: <%= @zoom != nil ? @zoom : 2 %>,
-        center: new L.LatLng(
-          <%= @lat != nil && @lon != nil ? @lat : 0 %>,
-          <%= @lat != nil && @lon != nil ? @lon : 0 %>
-        )
-      };
+      var options = {};
+      
+      <% if @center %>
+        options.zoom = <%= @center[2] %>;
+        options.center = new L.LatLng(
+          <%= @center[0] %>,
+          <%= @center[1] %>
+        );
+      <% else %>
+        options.zoom = 2;
+        options.center = new L.LatLng(0, 0);
+      <% end %>
+      
+      <% if @zoom %>
+        options.minZoom = <%= @zoom.min %>;
+        options.maxZoom = <%= @zoom.max %>;
+      <% end %>
       
       
       // If we used localStorage to store the last position, use that instead

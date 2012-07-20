@@ -10,6 +10,10 @@ module Cover
     
       super()
       
+      if options[:zoom]
+        @zoom = options[:zoom]
+      end
+      
       if options[:tileset]
         @tileset = options[:tileset]
         @format = @tileset.select_metadata["format"]
@@ -19,9 +23,7 @@ module Cover
       end
 
       if options[:center] =~ /(\-?\d+(?:\.\d+)?),(\-?\d+(?:\.\d+)?),(\d+)/
-        @lat = $1
-        @lon = $2
-        @zoom = $3
+        @center = [$1,$2,$3]
       end
     
     end
@@ -29,29 +31,12 @@ module Cover
     get "/" do
       erb :index
     end
-    
-    get "/tiles.json" do
-      
-      if @tileset
-        metadata = @tileset.select_metadata
-      else
-        metadata = {}
-      end
-      
-      metadata.update({
-        "tilejson" => "2.0.0",
-        "tiles" => [
-          "/{z}/{x}/{y}"
-        ]
-      })
-      
-      content_type :js
-      
-      JSON.dump(metadata)
-      
-    end
   
     get "/:z/:x/:y" do
+      
+      if @zoom && !@zoom.include?(params[:z].to_i)
+        halt 404
+      end
       
       hash = get_hash(params[:z], params[:x], params[:y])
       
@@ -61,50 +46,47 @@ module Cover
       
       tile = fetch_tile(params[:z], params[:x], params[:y])
       
-      if tile
-        
-        # If the tile is already deflated and the client will accept
-        # deflate, pass as-is with content-encoding set. Otherwise,
-        # inflate the tile.
-        
-        if @format == "js.deflate"
-          encoding = Rack::Utils.select_best_encoding(%w(deflate identity), request.accept_encoding)
-          
-          if encoding == "deflate"
-            headers "Content-Encoding" => "deflate"
-          else
-            tile = Zlib.inflate(tile)
-          end
-        end
-        
-        content_type :js
-        tile
-        
-      else
-        
-        404
-        
+      if tile == nil
+        halt 404
       end
+        
+      # If the tile is already deflated and the client will accept
+      # deflate, pass as-is with content-encoding set. Otherwise,
+      # inflate the tile.
+      
+      if @format == "js.deflate"
+        encoding = Rack::Utils.select_best_encoding(%w(deflate identity), request.accept_encoding)
+        
+        if encoding == "deflate"
+          headers "Content-Encoding" => "deflate"
+        else
+          tile = Zlib.inflate(tile)
+        end
+      end
+      
+      content_type :js
+      
+      tile
       
     end
     
     get "/:z/:x/:y/inspect" do
       
+      if @zoom && !@zoom.include?(params[:z].to_i)
+        halt 404
+      end
+      
       @tile = fetch_tile(params[:z], params[:x], params[:y])
       
-      if @tile
-      
-        if @format == "js.deflate"
-          @tile = Zlib.inflate(@tile)
-        end
-      
-        erb :inspect
-        
-      else
-        
-        404
-        
+      if @tile == nil
+        halt 404
       end
+      
+      if @format == "js.deflate"
+        @tile = Zlib.inflate(@tile)
+      end
+    
+      erb :inspect
       
     end
   

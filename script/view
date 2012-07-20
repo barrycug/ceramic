@@ -2,14 +2,15 @@
 require "rubygems"
 require "rack"
 
-$LOAD_PATH << "./#{File.dirname(__FILE__)}/../lib"
-$LOAD_PATH << "./#{File.dirname(__FILE__)}/../vendor"
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
 require "trollop"
 require "cover"
 require "./#{File.dirname(__FILE__)}/../viewer/viewer"
 
 options = Trollop::options do
-  opt :center, "Initial map center (lat,lon,zoom)", :type => :string
+  opt :center, "Initial map center as lat,lon,zoom, for example: 37.7392,-122.3011,9", :type => :string
+  opt :zoom, "List of zoom levels to serve, for example: 9 10 11 12 (omit to serve all available)", :type => :integers
   opt :port, "Port", :type => :integer, :default => 3857
   opt :host, "Host", :type => :string, :default => "0.0.0.0"
 end
@@ -37,7 +38,8 @@ if options[:tileset]
   Rack::Server.start(
     :app => Cover::Viewer.new(options.merge(tileset: tileset)),
     :Host => options[:host],
-    :Port => options[:port]
+    :Port => options[:port],
+    :zoom => options[:zoom]
   )
   
 else
@@ -54,7 +56,8 @@ else
   Rack::Server.start(
     :app => Cover::Viewer.new(options.merge(maker: Cover.config.maker)),
     :Host => options[:host],
-    :Port => options[:port]
+    :Port => options[:port],
+    :zoom => options[:zoom]
   )
   
 end

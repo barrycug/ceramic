@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 require "rubygems"
 
-$LOAD_PATH << "./#{File.dirname(__FILE__)}/../lib"
-$LOAD_PATH << "./#{File.dirname(__FILE__)}/../vendor"
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
 require "cover"
 
 def usage

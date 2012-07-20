@@ -4,8 +4,8 @@ require "rack"
 require "logger"
 require "zlib"
 
-$LOAD_PATH << "./#{File.dirname(__FILE__)}/../lib"
-$LOAD_PATH << "./#{File.dirname(__FILE__)}/../vendor"
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
 require "trollop"
 require "cover"
 

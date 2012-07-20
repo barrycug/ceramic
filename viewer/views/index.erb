@@ -49,14 +49,6 @@
       <% end %>
       
       
-      var center;
-      
-      if (center = window.location.hash.slice(1).match(/(\d+)\/(\-?\d+(?:\.\d+)?)\/(\-?\d+(?:\.\d+)?)/)) {
-        options.center = new L.LatLng(parseFloat(center[2]), parseFloat(center[3]));
-        options.zoom = parseInt(center[1]);
-      }
-      
-      
       // Set up the map
       
       var map = new L.Map("map", options);
@@ -90,6 +82,11 @@
       });
       
       
+      // Respond to initial hash if present
+      
+      handleHashChange();
+      
+      
       // Inspect popup
       
       var popup = new L.Popup();
@@ -107,8 +104,8 @@
         // Get index path
         
         var index = map.getZoom() + "/" +
-                    Math.floor(position.x / 1024) + "/" +
-                    Math.floor(position.y / 1024);
+                    Math.floor(position.x / 256) + "/" +
+                    Math.floor(position.y / 256);
                     
         // Display popup
         
@@ -129,18 +126,13 @@
       
       // Canvas tiles (overlay)
       
-      var canvasDebugLayer = new CanvasDebugLayer("/{z}/{x}/{y}", {
-        zoomOffset: -2,
-        tileSize: 1024
-      });
+      var canvasDebugLayer = new CanvasDebugLayer("/{z}/{x}/{y}");
       
       
       // Kothic
       
       var kothic = new KothicLayer("/{z}/{x}/{y}", {
-        attribution: "Rendering by <a href=\"http://github.com/kothic/kothic-js\">Kothic JS</a>",
-        zoomOffset: -2,
-        tileSize: 1024
+        attribution: "Rendering by <a href=\"http://github.com/kothic/kothic-js\">Kothic JS</a>"
       });
       
       

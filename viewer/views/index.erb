@@ -49,34 +49,42 @@
       <% end %>
       
       
-      // If we used localStorage to store the last position, use that instead
-      
-      (function() {
-      
-        var lat, lon, zoom;
-      
-        if ((lat = parseFloat(localStorage.getItem("lat"))) &&
-            (lon = parseFloat(localStorage.getItem("lon"))) &&
-            (zoom = parseInt(localStorage.getItem("zoom")))) {
-          options.center = new L.LatLng(lat, lon);
-          options.zoom = zoom;
-        }
-        
-      })();
-      
-      
       // Set up the map
       
       var map = new L.Map("map", options);
       
       map.on("moveend", function() {
-        localStorage.setItem("lat", map.getCenter().lat.toString());
-        localStorage.setItem("lon", map.getCenter().lng.toString());
+        window.location.hash = [map.getZoom(), map.getCenter().lat, map.getCenter().lng].join("/");
       });
       
       map.on("zoomend", function() {
-        localStorage.setItem("zoom", map.getZoom().toString());
+        window.location.hash = [map.getZoom(), map.getCenter().lat, map.getCenter().lng].join("/");
       });
+      
+      
+      // Listen to hash changes
+      
+      function handleHashChange() {
+        
+        var center;
+        
+        if (center = window.location.hash.slice(1).match(/(\d+)\/(\-?\d+(?:\.\d+)?)\/(\-?\d+(?:\.\d+)?)/)) {
+          map.panTo(new L.LatLng(parseFloat(center[2]), parseFloat(center[3])));
+          map.setZoom(parseInt(center[1]));
+        }
+        
+      }
+      
+      window.addEventListener("hashchange", function() {
+        
+        handleHashChange();
+        
+      });
+      
+      
+      // Respond to initial hash if present
+      
+      handleHashChange();
       
       
       // Inspect popup

@@ -1,0 +1,64 @@
+#!/usr/bin/env ruby
+require "rubygems"
+require "benchmark"
+
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
+require "trollop"
+require "cover"
+
+options = Trollop::options do
+  opt :config, "Configuration file", :type => :string, :required => true
+  opt :tiles, "Tile indices", :type => :strings, :required => true
+end
+
+require File.expand_path(options[:config])
+  
+if !Cover.config.respond_to?(:maker)
+  puts "Config file must assign to Cover.config an object which responds to #maker"
+  exit
+end
+
+if Cover.config.respond_to?(:setup)
+  Cover.config.setup
+end
+
+# assemble tile indices
+
+tiles = []
+
+options[:tiles].each do |tile|
+  
+  # if an index is a file, read tile indexes from that file, skipping
+  # lines that start with "#".
+  
+  if File.exist?(tile)
+    File.open(tile, "r").each_line do |line|
+      next if line =~ /^#/ || line =~ /^\s*$/
+      tiles << Cover::Index.from_string(line)
+    end
+  else
+    tiles << Cover::Index.from_string(tile)
+  end
+  
+end
+
+# do benchmarking
+
+Benchmark.benchmark(Benchmark::CAPTION, 16, Benchmark::FORMAT, "Total", "Mean") do |x|
+  
+  tms = Benchmark::Tms.new
+  
+  tiles.each do |tile|
+    tms = tms + x.report(tile) do
+      Cover.config.maker.render_tile(tile)
+    end
+  end
+  
+  [tms, tms / tiles.size]
+
+end
+
+if Cover.config.respond_to?(:teardown)
+  Cover.config.teardown
+end

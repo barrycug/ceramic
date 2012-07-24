@@ -22,6 +22,10 @@ module Cover
       @bounds = mercator.tile_bounds(*mercator.google_tile(@x, @y, @z), @z)
     
     end
+    
+    def to_s
+      "#{z}/#{x}/#{y}"
+    end
   
     def bbox(srid)
     

@@ -83,7 +83,7 @@ class Basic
     )
     
     medium_zoom_line_source = Cover::Source.new(
-      "(select *, ST_PointOnSurface(way) as point from planet_osm_line where (\"waterway\" = 'river' or highway in ('motorway', 'trunk', 'primary', 'secondary') or admin_level <> '' or route = 'ferry') and ST_Length(way) > :unit::float * 64) as q",
+      "(select *, ST_PointOnSurface(way) as point from planet_osm_line where (\"waterway\" = 'river' or highway in ('motorway', 'trunk', 'primary', 'secondary') or admin_level <> '' or route = 'ferry')) as q",
       connection: @connection,
       srid: 900913,
       geometry: {
@@ -97,7 +97,7 @@ class Basic
     )
     
     medium_zoom_polygon_source = Cover::Source.new(
-      "(select *, ST_PointOnSurface(ST_Buffer(way, 0)) as point from planet_osm_polygon where (\"natural\" in ('water', 'wood', 'land', 'beach', 'bay') or \"landuse\" in ('forest', 'residential') or waterway in ('lake', 'river') or boundary in ('administrative', 'protected_area', 'national_park')) and ST_Area(way) > :unit::float * :unit::float * 256 * 256) as q",
+      "(select *, ST_PointOnSurface(ST_Buffer(way, 0)) as point from planet_osm_polygon where (\"natural\" in ('water', 'wood', 'land', 'beach', 'bay') or \"landuse\" in ('forest', 'residential') or waterway in ('lake', 'river') or boundary in ('administrative', 'protected_area', 'national_park'))) as q",
       connection: @connection,
       srid: 900913,
       geometry: {
@@ -114,7 +114,7 @@ class Basic
     # Low zoom sources
     
     low_zoom_coastline_source = Cover::Source.new(
-      "(select ST_Union(ST_Buffer(geom, 0)) as geom from coastlines where geom && !bbox! and ST_Area(geom) > :unit::float * :unit::float * 32 * 32) as c",
+      "(select ST_Union(ST_Buffer(geom, 0)) as geom from coastlines where geom && !bbox!) as c",
       connection: @connection,
       srid: 3857,
       geometry: {
@@ -230,10 +230,6 @@ class Basic
         features.make(medium_zoom_polygon_source, line_polygon_builder)
         features.make(medium_zoom_line_source, line_polygon_builder)
         features.make(medium_zoom_point_source, point_builder)
-        
-      else
-        
-        features.make(low_zoom_coastline_source, coastline_builder)
         
       end
   

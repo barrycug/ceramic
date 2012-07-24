@@ -15,6 +15,29 @@ module Cover
       @geometry_srid = options[:srid]
     
     end
+    
+    def select_metatile(index, scale, size)
+      
+      if (size & (size - 1)) != 0
+        raise ArgumentError, "size must be a power of 2"
+      end
+      
+      mx = index.x & ~(size - 1)
+      my = index.y & ~(size - 1)
+
+      tiles = []
+
+      for x in mx .. mx + size - 1
+        for y in my .. my + size - 1
+    
+          tiles << select_rows(Cover::Index.new(index.z, x, y), scale)
+    
+        end
+      end
+      
+      tiles
+      
+    end
   
     def select_rows(index, scale)
     

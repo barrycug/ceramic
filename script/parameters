@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+require "rubygems"
+
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
+require "trollop"
+require "cover"
+
+options = Trollop::options do
+  opt :tile, "Tile index", :type => :string, :required => true
+  opt :scale, "Scale", :type => :integer, :required => true
+  opt :srid, "SRID", :type => :integer, :default => 900913
+end
+
+index = Cover::Index.from_string(options[:tile])
+bbox = index.bbox(options[:srid])
+
+# FIXME: get directly from Cover::Source?
+
+parameters = {
+  "translate_x" => -bbox[:left],
+  "translate_y" => -bbox[:top],
+  "scale_x" => options[:scale].to_f / bbox[:width],
+  "scale_y" => options[:scale].to_f / bbox[:height],
+  "left" => bbox[:left],
+  "top" => bbox[:top],
+  "right" => bbox[:right],
+  "bottom" => bbox[:bottom],
+  "unit" => bbox[:width] / options[:scale].to_f,
+  "srid" => options[:srid]
+}
+
+parameters.each do |k,v|
+  puts "#{k} = #{v}"
+end

@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 require "rubygems"
 require "benchmark"
+require "stringio"
 
 $LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
 $LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
@@ -9,7 +10,13 @@ require "cover"
 
 options = Trollop::options do
   opt :config, "Configuration file", :type => :string, :required => true
-  opt :tiles, "Tile indices", :type => :strings, :required => true
+  opt :tiles, "Tile indices", :type => :strings
+  opt :metatiles, "Metatile indices", :type => :strings
+  opt :size, "Metatile size", :type => :integer, :default => 8
+end
+
+if options[:tiles] == nil && options[:metatiles] == nil
+  Trollop::die "must specify either tiles or metatiles"
 end
 
 require File.expand_path(options[:config])
@@ -25,27 +32,36 @@ end
 
 # assemble tile indices
 
-tiles = []
-
-options[:tiles].each do |tile|
+def process_index_list(list)
   
-  # if an index is a file, read tile indexes from that file, skipping
-  # lines that start with "#".
+  result = []
   
-  if File.exist?(tile)
-    File.open(tile, "r").each_line do |line|
-      next if line =~ /^#/ || line =~ /^\s*$/
-      tiles << Cover::Index.from_string(line)
+  list.each do |index|
+  
+    # if an index is a file, read tile indexes from that file, skipping
+    # lines that start with "#".
+  
+    if File.exist?(index)
+      File.open(index, "r").each_line do |line|
+        next if line =~ /^#/ || line =~ /^\s*$/
+        result << Cover::Index.from_string(line)
+      end
+    else
+      result << Cover::Index.from_string(index)
     end
-  else
-    tiles << Cover::Index.from_string(tile)
+  
   end
+  
+  result
   
 end
 
+tiles = process_index_list(options[:tiles] || [])
+metatiles = process_index_list(options[:metatiles] || [])
+
 # do benchmarking
 
-Benchmark.benchmark(Benchmark::CAPTION, 16, Benchmark::FORMAT, "Total", "Mean") do |x|
+Benchmark.benchmark(Benchmark::CAPTION, 20, Benchmark::FORMAT, "Total", "Mean") do |x|
   
   tms = Benchmark::Tms.new
   
@@ -55,7 +71,13 @@ Benchmark.benchmark(Benchmark::CAPTION, 16, Benchmark::FORMAT, "Total", "Mean") 
     end
   end
   
-  [tms, tms / tiles.size]
+  metatiles.each do |tile|
+    tms = tms + x.report("#{tile} (meta)") do
+      Cover.config.maker.render_metatile(tile, options[:size], StringIO.new)
+    end
+  end
+  
+  [tms, tms / (tiles.size + metatiles.size)]
 
 end
 

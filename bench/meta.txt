@@ -1,7 +1,5 @@
 # Assorted metatiles in the SF bay area
 
-7/16/48
-8/40/96
 9/80/196
 10/160/392
 11/320/792

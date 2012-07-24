@@ -41,55 +41,12 @@ if !Cover.config.respond_to?(:maker)
   exit
 end
 
-# set up maker
+# set up, write the metatile, and teardown
 
 Cover.config.setup
 
-# query each tile in the metatile, storing the results in an array
-
-# TODO: query for entire metatile area first, then get individual
-# tiles out of that?
-
-size = options[:size]
-
-z = options[:index].z
-mx = options[:index].x & ~(size - 1)
-my = options[:index].y & ~(size - 1)
-
-data = []
-
-(mx .. mx + size - 1).each do |x|
-  (my .. my + size - 1).each do |y|
-    
-    index = Cover::Index.new(z, x, y)
-    data << Cover.config.maker.render_tile(index)
-    
-  end
-end
-
-# write results to output file
-
-# native byte order is used, since metatiles are not meant
-# for transmission over the network?
-
 File.open(options[:output], "wb+") do |f|
-  
-  f << ["META"].pack("a4")
-  f << [size * size, mx, my, z].pack("l4")
-  
-  offset = 4 + (4 * 4) + (8 * size * size)
-  
-  data.each do |d|
-    f << [offset, d.bytesize].pack("l2")
-    offset += d.bytesize
-  end
-  
-  data.each do |d|
-    f << d
-  end
-  
+  Cover.config.maker.render_metatile(options[:index], options[:size], f)
 end
-
-# done!
 
 Cover.config.teardown

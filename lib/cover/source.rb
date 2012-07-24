@@ -29,7 +29,7 @@ module Cover
 
       for x in mx .. mx + size - 1
         for y in my .. my + size - 1
-    
+          
           tiles << select_rows(Cover::Index.new(index.z, x, y), scale)
     
         end

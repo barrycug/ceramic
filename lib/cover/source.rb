@@ -17,132 +17,25 @@ module Cover
     end
     
     def select_metatile(index, scale, size)
-    
-      arguments = metatile_query_arguments(index, scale, size)
       
-      result = @connection.exec(*arguments)
-      
-      geometry_json = @geometry_column_options.inject({}) do |hash, (column, _)|
-        hash[column + "_geometry_json"] = column
-        hash
+      if (size & (size - 1)) != 0
+        raise ArgumentError, "size must be a power of 2"
       end
-    
-      tiles = Array.new(size * size) { [] }
-    
-      result.each do |tuple|
       
-        row = {}
-      
-        tuple.each do |column, value|
-        
-          if column == "grid_index" || column == "grid_bbox"
-            next
-          elsif @geometry_column_options.has_key?(column)
-            next
-          elsif geometry_json.has_key?(column)
-            row[geometry_json[column]] = JSON.parse(tuple[column])
-          elsif @type_conversions[column] == :hstore
-            row[column] = hash_from_hstore(value)
-          elsif @type_conversions[column] == :integer
-            row[column] = value.to_i
-          elsif @type_conversions[column] == :real
-            row[column] = value.to_f
-          else
-            row[column] = value
-          end
-        
+      mx = index.x & ~(size - 1)
+      my = index.y & ~(size - 1)
+
+      tiles = []
+
+      for x in mx .. mx + size - 1
+        for y in my .. my + size - 1
+          
+          tiles << select_rows(Cover::Index.new(index.z, x, y), scale)
+    
         end
-      
-        tiles[tuple["grid_index"].to_i] << row
-      
       end
-      
-      result.clear
       
       tiles
-      
-    end
-    
-    def metatile_query_arguments(index, scale, size)
-    
-      columns = ["*"]
-    
-      @geometry_column_options.each do |column, column_options|
-      
-        case column_options[:type]
-        when :point
-          columns << build_point_geometry_column(column, column_options)
-        when :line
-          columns << build_line_geometry_column(column, column_options)
-        when :polygon
-          columns << build_polygon_geometry_column(column, column_options)
-        end
-      
-      end
-      
-      metatile_envelope = <<-END
-ST_MakeEnvelope(
-  :left::float,
-  :top::float,
-  :left::float + (:size::int * :width::float),
-  :top::float + (:size::int * :height::float),
-  :srid::int
-)
-END
-      
-      subquery = @table.gsub("!bbox!", metatile_envelope)
-      
-      query = <<-END
-WITH
-  metatile AS (
-    SELECT * FROM #{subquery}
-    WHERE
-      ST_Intersects(
-        #{quote(@bbox_column)},
-        #{metatile_envelope}
-      )
-  ),
-  grid AS (
-    SELECT
-      (grid_y + (grid_x * :size::int)) as grid_index,
-      ST_MakeEnvelope(
-        :left::float + (grid_x * :width::float),
-        :top::float + (grid_y * :height::float),
-        :left::float + ((grid_x + 1) * :width::float),
-        :top::float + ((grid_y + 1) * :height::float),
-        :srid::int
-      ) AS grid_bbox
-    FROM
-      (SELECT generate_series(0, :size::int - 1)) AS x(grid_x)
-      CROSS JOIN
-      (SELECT generate_series(0, :size::int - 1)) AS y(grid_y)
-  )
-SELECT
-  #{columns.join(", ")}
-FROM
-  metatile INNER JOIN grid
-  ON ST_Intersects(#{quote(@bbox_column)}, grid_bbox)
-END
-      
-      bbox = index.bbox(@geometry_srid)
-    
-      parameters = {
-        "translate_x" => -bbox[:left],
-        "translate_y" => -bbox[:top],
-        "scale_x" => scale.to_f / bbox[:width],
-        "scale_y" => scale.to_f / bbox[:height],
-        "left" => bbox[:left],
-        "top" => bbox[:top],
-        "right" => bbox[:right],
-        "bottom" => bbox[:bottom],
-        "width" => bbox[:right] - bbox[:left],
-        "height" => bbox[:bottom] - bbox[:top],
-        "unit" => bbox[:width] / scale.to_f,
-        "srid" => @geometry_srid,
-        "size" => size
-      }
-    
-      build_query_arguments(query, parameters)
       
     end
   

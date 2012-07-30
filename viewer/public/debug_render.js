@@ -101,10 +101,13 @@ var DebugRender = {
 
   },
 
-  renderTile: function(canvas, tile) {
+  renderTile: function(canvas, tile, inset) {
+    
+    if (typeof inset === "undefined")
+      inset = 0;
 
     var context = canvas.getContext("2d");
-    var scale = canvas.width / tile.scale;
+    var scale = (canvas.width - inset * 2) / tile.scale;
 
     context.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -118,6 +121,7 @@ var DebugRender = {
     // Set scale for features
 
     context.save();
+    context.translate(inset, inset);
     context.scale(scale, scale);
 
     context.lineWidth = 2 / scale;

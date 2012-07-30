@@ -21,6 +21,13 @@
     <script src="/debug_render.js"></script>
     <script>
     
+      var metatile = {
+        z: <%= params[:z] %>,
+        x: <%= params[:x] %>,
+        y: <%= params[:y] %>,
+        size: <%= params[:size] || 4 %>
+      };
+    
       var tiles = [<%= @tiles.join(",\n") %>];
       var i;
       var size = Math.sqrt(tiles.length);
@@ -29,11 +36,13 @@
       
         canvas = document.createElement("canvas");
         
+        canvas.title = metatile.z + "/" + (metatile.x + Math.floor(i / metatile.size)) + "/" + (metatile.y + (i % metatile.size));
+        
         canvas.width = 128;
         canvas.height = 128;
         
-        canvas.style.left = (Math.floor(i / size) * 128) + "px";
-        canvas.style.top = ((i % size) * 128) + "px";
+        canvas.style.left = (Math.floor(i / metatile.size) * 130) + "px";
+        canvas.style.top = ((i % metatile.size) * 130) + "px";
         
         context = canvas.getContext("2d");
       

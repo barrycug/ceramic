@@ -21,11 +21,13 @@ parameters = {
   "translate_x" => -bbox[:left],
   "translate_y" => -bbox[:top],
   "scale_x" => options[:scale].to_f / bbox[:width],
-  "scale_y" => options[:scale].to_f / bbox[:height],
+  "scale_y" => options[:scale].to_f / -bbox[:height],
   "left" => bbox[:left],
   "top" => bbox[:top],
   "right" => bbox[:right],
   "bottom" => bbox[:bottom],
+  "width" => bbox[:width],
+  "height" => bbox[:height],
   "unit" => bbox[:width] / options[:scale].to_f,
   "srid" => options[:srid]
 }

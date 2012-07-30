@@ -144,11 +144,13 @@ module Cover
         "translate_x" => -bbox[:left],
         "translate_y" => -bbox[:top],
         "scale_x" => scale.to_f / bbox[:width],
-        "scale_y" => scale.to_f / bbox[:height],
+        "scale_y" => scale.to_f / -bbox[:height],
         "left" => bbox[:left],
         "top" => bbox[:top],
         "right" => bbox[:right],
         "bottom" => bbox[:bottom],
+        "width" => bbox[:width],
+        "height" => bbox[:height],
         "unit" => bbox[:width] / scale.to_f,
         "srid" => @geometry_srid
       }

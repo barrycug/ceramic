@@ -39,7 +39,7 @@ module Cover
         right: @bounds[2],
         bottom: @bounds[1],
         width: @bounds[2] - @bounds[0],
-        height: @bounds[1] - @bounds[3]
+        height: @bounds[3] - @bounds[1]
       }
     
     end

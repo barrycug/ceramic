@@ -19,6 +19,9 @@ module Cover
     def select_metatile(index, scale, size)
       
       arguments = metatile_query_arguments(index, scale, size)
+      
+      puts arguments[0].gsub(/\$(\d+)/) { |i| "(#{arguments[1][i.to_i + 1]})" }
+      
       result = @connection.exec(*arguments)
       rows = process_result(result, size * size)
       result.clear
@@ -29,13 +32,30 @@ module Cover
     
     def metatile_query_arguments(index, scale, size)
       
+      columns = ["*"]
+  
+      @geometry_column_options.each do |column, column_options|
+    
+        case column_options[:type]
+        when :point
+          columns << build_point_geometry_column(column, column_options).gsub("!bbox!", "tiles.bbox")
+        when :line
+          columns << build_line_geometry_column(column, column_options).gsub("!bbox!", "tiles.bbox")
+        when :polygon
+          columns << build_polygon_geometry_column(column, column_options).gsub("!bbox!", "tiles.bbox")
+        end
+    
+      end
+  
+      subquery = @table.gsub("!bbox!", "ST_MakeEnvelope(:left, :top, :left + (:size * :width), :top - (:size * :height), :srid)")
+      
       query = <<-END
 WITH
 metatile AS
 (
   SELECT *
-  FROM planet_osm_line
-  WHERE ST_Intersects(way, ST_MakeEnvelope(:left, :top, :left + (:size * :width), :top - (:size * :height), 900913))
+  FROM #{subquery}
+  WHERE #{quote(@bbox_column)} && ST_MakeEnvelope(:left, :top, :left + (:size * :width), :top - (:size * :height), :srid)
 ),
 
 tiles AS
@@ -58,21 +78,11 @@ tiles AS
 )
 
 SELECT
-  tiles.index AS tile_index,
-  metatile.osm_id AS osm_id,
-  ST_AsGeoJSON(
-    ST_TransScale(
-      ST_Intersection(metatile.way, tiles.bbox),
-      tiles.translate_x,
-      tiles.translate_y,
-      :scale_x,
-      :scale_y
-    ),
-    0
-  ) AS way_geometry_json
+  #{columns.join(", ")},
+  tiles.index AS tile_index
 FROM
   metatile INNER JOIN tiles
-  ON ST_Intersects(metatile.way, tiles.bbox)
+  ON ST_Intersects(#{quote(@bbox_column)}, tiles.bbox)
 END
     
       # calculate parameters
@@ -102,43 +112,6 @@ END
     end
   
     protected
-      
-      def tile_query
-        
-        # prepare the list of columns
-    
-        columns = ["*"]
-    
-        @geometry_column_options.each do |column, column_options|
-      
-          case column_options[:type]
-          when :point
-            columns << build_point_geometry_column(column, column_options)
-          when :line
-            columns << build_line_geometry_column(column, column_options)
-          when :polygon
-            columns << build_polygon_geometry_column(column, column_options)
-          end
-      
-        end
-    
-        # set the subquery, replacing the !bbox! macro with a real envelope
-    
-        subquery = @table.gsub("!bbox!", build_envelope)
-    
-        # set intersects condition if the bbox option is specified
-    
-        if @bbox_column
-          conditions = "WHERE #{quote(@bbox_column)} && #{build_envelope}"
-        else
-          conditions = ""
-        end
-    
-        # put the query together
-    
-        query = "SELECT #{columns.join(", ")} FROM #{subquery} #{conditions}"
-        
-      end
     
       def process_result(result, length)
         
@@ -195,9 +168,9 @@ END
         <<-END
   ST_AsGeoJSON(
     ST_TransScale(
-      #{quote(name)},
-      :translate_x,
-      :translate_y,
+      #{name},
+      tiles.translate_x,
+      tiles.translate_y,
       :scale_x,
       :scale_y
     ),
@@ -212,10 +185,10 @@ END
     ST_TransScale(
       ST_Intersection(
         #{build_simplify(name, options[:simplify])},
-        #{build_envelope}
+        !bbox!
       ),
-      :translate_x,
-      :translate_y,
+      tiles.translate_x,
+      tiles.translate_y,
       :scale_x,
       :scale_y
     ),
@@ -234,11 +207,11 @@ END
             #{build_simplify(name, options[:simplify])},
             0
           ),
-          #{build_envelope}
+          !bbox!
         )
       ),
-      :translate_x,
-      :translate_y,
+      tiles.translate_x,
+      tiles.translate_y,
       :scale_x,
       :scale_y
     ),
@@ -249,9 +222,9 @@ END
     
       def build_simplify(name, simplify)
         if simplify && simplify > 0
-          "ST_SimplifyPreserveTopology(#{quote(name)}, :unit * #{simplify})"
+          "ST_SimplifyPreserveTopology(#{name}, :unit * #{simplify})"
         else
-          quote(name)
+          name
         end
       end
     

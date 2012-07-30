@@ -56,44 +56,6 @@ module Cover
       
     end
   
-    def select_rows(index, scale)
-      
-      arguments = query_arguments(index, scale)
-      result = @connection.exec(*arguments)
-      rows = process_result(result, 1)[0]
-      result.clear
-      
-      rows
-      
-    end
-  
-    def query_arguments(index, scale)
-    
-      # calculate parameters
-    
-      bbox = index.bbox(@geometry_srid)
-    
-      parameters = {
-        "translate_x" => [-bbox[:left], "float"],
-        "translate_y" => [-bbox[:top], "float"],
-        "scale_x" => [scale.to_f / bbox[:width], "float"],
-        "scale_y" => [scale.to_f / -bbox[:height], "float"],
-        "left" => [bbox[:left], "float"],
-        "top" => [bbox[:top], "float"],
-        "right" => [bbox[:right], "float"],
-        "bottom" => [bbox[:bottom], "float"],
-        "width" => [bbox[:width], "float"],
-        "height" => [bbox[:height], "float"],
-        "unit" => [bbox[:width] / scale.to_f, "float"],
-        "srid" => [@geometry_srid, "int"]
-      }
-    
-      # build [query, parameters] from the query and named parameters
-  
-      build_query_arguments(tile_query, parameters)
-  
-    end
-  
     protected
       
       def tile_query
@@ -144,7 +106,7 @@ module Cover
     
         result.each do |tuple|
           row = {}
-          index = 0
+          index = nil
       
           tuple.each do |column, value|
             if @geometry_column_options.has_key?(column)

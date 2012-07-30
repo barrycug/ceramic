@@ -69,18 +69,18 @@ module Cover
       bbox = index.bbox(@geometry_srid)
     
       parameters = {
-        "translate_x::float" => -bbox[:left],
-        "translate_y::float" => -bbox[:top],
-        "scale_x::float" => scale.to_f / bbox[:width],
-        "scale_y::float" => scale.to_f / -bbox[:height],
-        "left::float" => bbox[:left],
-        "top::float" => bbox[:top],
-        "right::float" => bbox[:right],
-        "bottom::float" => bbox[:bottom],
-        "width::float" => bbox[:width],
-        "height::float" => bbox[:height],
-        "unit::float" => bbox[:width] / scale.to_f,
-        "srid::int" => @geometry_srid
+        "translate_x" => [-bbox[:left], "float"],
+        "translate_y" => [-bbox[:top], "float"],
+        "scale_x" => [scale.to_f / bbox[:width], "float"],
+        "scale_y" => [scale.to_f / -bbox[:height], "float"],
+        "left" => [bbox[:left], "float"],
+        "top" => [bbox[:top], "float"],
+        "right" => [bbox[:right], "float"],
+        "bottom" => [bbox[:bottom], "float"],
+        "width" => [bbox[:width], "float"],
+        "height" => [bbox[:height], "float"],
+        "unit" => [bbox[:width] / scale.to_f, "float"],
+        "srid" => [@geometry_srid, "int"]
       }
     
       # build [query, parameters] from the query and named parameters
@@ -140,18 +140,18 @@ module Cover
       bbox = index.bbox(@geometry_srid)
     
       parameters = {
-        "translate_x::float" => -bbox[:left],
-        "translate_y::float" => -bbox[:top],
-        "scale_x::float" => scale.to_f / bbox[:width],
-        "scale_y::float" => scale.to_f / -bbox[:height],
-        "left::float" => bbox[:left],
-        "top::float" => bbox[:top],
-        "right::float" => bbox[:right],
-        "bottom::float" => bbox[:bottom],
-        "width::float" => bbox[:width],
-        "height::float" => bbox[:height],
-        "unit::float" => bbox[:width] / scale.to_f,
-        "srid::int" => @geometry_srid
+        "translate_x" => [-bbox[:left], "float"],
+        "translate_y" => [-bbox[:top], "float"],
+        "scale_x" => [scale.to_f / bbox[:width], "float"],
+        "scale_y" => [scale.to_f / -bbox[:height], "float"],
+        "left" => [bbox[:left], "float"],
+        "top" => [bbox[:top], "float"],
+        "right" => [bbox[:right], "float"],
+        "bottom" => [bbox[:bottom], "float"],
+        "width" => [bbox[:width], "float"],
+        "height" => [bbox[:height], "float"],
+        "unit" => [bbox[:width] / scale.to_f, "float"],
+        "srid" => [@geometry_srid, "int"]
       }
     
       # build [query, parameters] from the query and named parameters
@@ -204,9 +204,7 @@ module Cover
         result = query.dup
         numbered = []
   
-        named.each do |name, value|
-          name, type = name.split("::")
-          
+        named.each do |name, (value, type)|
           if result.gsub!(":#{name}", "$#{numbered.size + 1}::#{type}")
             numbered << value
           end

@@ -89,6 +89,24 @@ module Cover
       erb :inspect
       
     end
+    
+    get "/:z/:x/:y/metatile" do
+      
+      if @zoom && !@zoom.include?(params[:z].to_i)
+        halt 404
+      end
+      
+      if @tileset
+        halt 404
+      end
+      
+      index = Cover::Index.new(params[:z].to_i, params[:x].to_i, params[:y].to_i)
+      
+      @tiles = @maker.render_metatile(index, 2)
+    
+      erb :metatile
+      
+    end
   
     protected
   

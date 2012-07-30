@@ -43,7 +43,7 @@ module Cover
   
     end
     
-    def render_metatile(index, size, io)
+    def render_metatile(index, size)
       
       if (size & (size - 1)) != 0
         raise ArgumentError, "size must be a power of 2"
@@ -54,12 +54,25 @@ module Cover
       
       tiles = collect_features(Cover::Index.new(index.z, mx, my), size)
       
-      data = tiles.map do |features|
+      tiles.map do |features|
         JSON.dump(
           "scale" => @scale,
           "features" => features
         )
       end
+      
+    end
+    
+    def write_metatile(index, size, io)
+      
+      if (size & (size - 1)) != 0
+        raise ArgumentError, "size must be a power of 2"
+      end
+      
+      mx = index.x & ~(size - 1)
+      my = index.y & ~(size - 1)
+      
+      data = render_metatile(index, size)
       
       io << ["META"].pack("a4")
       io << [size * size, mx, my, index.z].pack("l4")
@@ -91,11 +104,11 @@ module Cover
     protected
     
       def collect_features(index, size)
-    
+  
         collector = FeatureCollector.new(index, @scale, size)
         @block.call(index, collector)
         features = collector.instance_eval { @list }
-        
+      
       end
   
   end

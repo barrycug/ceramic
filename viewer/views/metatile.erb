@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Metatile for <%= params[:z] %>/<%= params[:x] %>/<%= params[:y] %></title>
+    <style>
+      
+      body {
+        background: #eee;
+      }
+      
+      canvas {
+        background: #fff;
+        position: absolute;
+      }
+      
+    </style>
+  </head>
+  <body>
+    
+    <script src="/debug_render.js"></script>
+    <script>
+    
+      var tiles = [<%= @tiles.join(",\n") %>];
+      var i;
+      var size = Math.sqrt(tiles.length);
+      
+      for (i = 0; i < tiles.length; i++) {
+      
+        canvas = document.createElement("canvas");
+        
+        canvas.width = 128;
+        canvas.height = 128;
+        
+        canvas.style.left = (Math.floor(i / size) * 128) + "px";
+        canvas.style.top = ((i % size) * 128) + "px";
+        
+        context = canvas.getContext("2d");
+      
+        DebugRender.renderTile(canvas, tiles[i]);
+        
+        document.body.appendChild(canvas);
+        
+      }
+      
+    </script>
+    
+  </body>
+</html>

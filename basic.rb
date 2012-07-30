@@ -217,19 +217,12 @@ class Basic
     
     Cover::Maker.new(scale: 8192) do |index, features|
       
-      if index.z >= 13
+      if index.z >= 11
         
         features.make(high_zoom_coastline_source, coastline_builder)
         features.make(high_zoom_polygon_source, line_polygon_builder)
         features.make(high_zoom_line_source, line_polygon_builder)
         features.make(high_zoom_point_source, point_builder)
-        
-      elsif index.z >= 9
-        
-        features.make(low_zoom_coastline_source, coastline_builder)
-        features.make(medium_zoom_polygon_source, line_polygon_builder)
-        features.make(medium_zoom_line_source, line_polygon_builder)
-        features.make(medium_zoom_point_source, point_builder)
         
       end
   

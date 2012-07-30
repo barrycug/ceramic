@@ -18,87 +18,86 @@ module Cover
     
     def select_metatile(index, scale, size)
       
-      if (size & (size - 1)) != 0
-        raise ArgumentError, "size must be a power of 2"
-      end
+      arguments = metatile_query_arguments(index, scale, size)
+      result = @connection.exec(*arguments)
+      rows = process_result(result, size * size)
+      result.clear
       
-      mx = index.x & ~(size - 1)
-      my = index.y & ~(size - 1)
-
-      tiles = []
-
-      for x in mx .. mx + size - 1
-        for y in my .. my + size - 1
-          
-          tiles << select_rows(Cover::Index.new(index.z, x, y), scale)
+      rows
+      
+    end
     
+    def metatile_query_arguments(index, scale, size)
+      
+      # prepare the list of columns
+    
+      columns = ["*"]
+    
+      @geometry_column_options.each do |column, column_options|
+      
+        case column_options[:type]
+        when :point
+          columns << build_point_geometry_column(column, column_options)
+        when :line
+          columns << build_line_geometry_column(column, column_options)
+        when :polygon
+          columns << build_polygon_geometry_column(column, column_options)
         end
+      
       end
       
-      tiles
+      columns << "0 as tile_index"
+    
+      # set the subquery, replacing the !bbox! macro with a real envelope
+    
+      subquery = @table.gsub("!bbox!", build_envelope)
+    
+      # set intersects condition if the bbox option is specified
+    
+      if @bbox_column
+        conditions = "WHERE #{quote(@bbox_column)} && #{build_envelope}"
+      else
+        conditions = ""
+      end
+    
+      # put the query together
+    
+      query = "SELECT #{columns.join(", ")} FROM #{subquery} #{conditions}"
+    
+      # calculate parameters
+    
+      bbox = index.bbox(@geometry_srid)
+    
+      parameters = {
+        "translate_x" => -bbox[:left],
+        "translate_y" => -bbox[:top],
+        "scale_x" => scale.to_f / bbox[:width],
+        "scale_y" => scale.to_f / -bbox[:height],
+        "left" => bbox[:left],
+        "top" => bbox[:top],
+        "right" => bbox[:right],
+        "bottom" => bbox[:bottom],
+        "width" => bbox[:width],
+        "height" => bbox[:height],
+        "unit" => bbox[:width] / scale.to_f,
+        "srid" => @geometry_srid
+      }
+    
+      # build [query, parameters] from the query and named parameters
+  
+      build_query_arguments(query, parameters)
       
     end
   
     def select_rows(index, scale)
-    
-      # Get arguments to use to execute the query
-    
+      
       arguments = query_arguments(index, scale)
-    
-      # Execute the query
-    
       result = @connection.exec(*arguments)
-    
-      # Process tuples and return rows
-    
-      # For any geometry columns that were declared, record what their GeoJSON
-      # counterparts are named.
-    
-      geometry_json = @geometry_column_options.inject({}) do |hash, (column, _)|
-        hash[column + "_geometry_json"] = column
-        hash
-      end
-    
-      # For each tuple, determine whether we should...
-      # - not output it, since it is an original geometry column
-      # - parse its JSON and output the resulting hash using the original
-      #   geometry column's name, since it is one of our GeoJSON columns
-      # - parse it as hstore and output it as a hash
-      # - parse it as an integer and output as an integer
-      # - output it as-is
-    
-      rows = result.map do |tuple|
-      
-        row = {}
-      
-        tuple.each do |column, value|
-        
-          if @geometry_column_options.has_key?(column)
-            next
-          elsif geometry_json.has_key?(column)
-            row[geometry_json[column]] = JSON.parse(tuple[column])
-          elsif @type_conversions[column] == :hstore
-            row[column] = hash_from_hstore(value)
-          elsif @type_conversions[column] == :integer
-            row[column] = value.to_i
-          elsif @type_conversions[column] == :real
-            row[column] = value.to_f
-          else
-            row[column] = value
-          end
-        
-        end
-      
-        row
-      
-      end
-      
-      # Clear the result
-      
+      rows = process_result(result, 1)[0]
       result.clear
       
       rows
-    
+      
     end
   
     def query_arguments(index, scale)
@@ -162,6 +161,44 @@ module Cover
     end
   
     protected
+    
+      def process_result(result, length)
+        
+        geometry_json = @geometry_column_options.inject({}) do |hash, (column, _)|
+          hash[column + "_geometry_json"] = column
+          hash
+        end
+        
+        tiles = Array.new(length) { [] }
+    
+        result.each do |tuple|
+          row = {}
+          index = 0
+      
+          tuple.each do |column, value|
+            if @geometry_column_options.has_key?(column)
+              next
+            elsif geometry_json.has_key?(column)
+              row[geometry_json[column]] = JSON.parse(tuple[column])
+            elsif @type_conversions[column] == :hstore
+              row[column] = hash_from_hstore(value)
+            elsif @type_conversions[column] == :integer
+              row[column] = value.to_i
+            elsif @type_conversions[column] == :real
+              row[column] = value.to_f
+            elsif column == "tile_index"
+              index = value.to_i
+            else
+              row[column] = value
+            end
+          end
+          
+          tiles[index] << row
+        end
+        
+        tiles
+        
+      end
   
       def build_query_arguments(query, named)
         result = query.dup

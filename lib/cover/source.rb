@@ -29,40 +29,7 @@ module Cover
     
     def metatile_query_arguments(index, scale, size)
       
-      # prepare the list of columns
-    
-      columns = ["*"]
-    
-      @geometry_column_options.each do |column, column_options|
-      
-        case column_options[:type]
-        when :point
-          columns << build_point_geometry_column(column, column_options)
-        when :line
-          columns << build_line_geometry_column(column, column_options)
-        when :polygon
-          columns << build_polygon_geometry_column(column, column_options)
-        end
-      
-      end
-      
-      columns << "0 as tile_index"
-    
-      # set the subquery, replacing the !bbox! macro with a real envelope
-    
-      subquery = @table.gsub("!bbox!", build_envelope)
-    
-      # set intersects condition if the bbox option is specified
-    
-      if @bbox_column
-        conditions = "WHERE #{quote(@bbox_column)} && #{build_envelope}"
-      else
-        conditions = ""
-      end
-    
-      # put the query together
-    
-      query = "SELECT #{columns.join(", ")} FROM #{subquery} #{conditions}"
+      query = "SELECT 0 AS tile_index, * FROM (#{tile_query}) t"
     
       # calculate parameters
     
@@ -102,39 +69,6 @@ module Cover
   
     def query_arguments(index, scale)
     
-      # prepare the list of columns
-    
-      columns = ["*"]
-    
-      @geometry_column_options.each do |column, column_options|
-      
-        case column_options[:type]
-        when :point
-          columns << build_point_geometry_column(column, column_options)
-        when :line
-          columns << build_line_geometry_column(column, column_options)
-        when :polygon
-          columns << build_polygon_geometry_column(column, column_options)
-        end
-      
-      end
-    
-      # set the subquery, replacing the !bbox! macro with a real envelope
-    
-      subquery = @table.gsub("!bbox!", build_envelope)
-    
-      # set intersects condition if the bbox option is specified
-    
-      if @bbox_column
-        conditions = "WHERE #{quote(@bbox_column)} && #{build_envelope}"
-      else
-        conditions = ""
-      end
-    
-      # put the query together
-    
-      query = "SELECT #{columns.join(", ")} FROM #{subquery} #{conditions}"
-    
       # calculate parameters
     
       bbox = index.bbox(@geometry_srid)
@@ -156,11 +90,48 @@ module Cover
     
       # build [query, parameters] from the query and named parameters
   
-      build_query_arguments(query, parameters)
+      build_query_arguments(tile_query, parameters)
   
     end
   
     protected
+      
+      def tile_query
+        
+        # prepare the list of columns
+    
+        columns = ["*"]
+    
+        @geometry_column_options.each do |column, column_options|
+      
+          case column_options[:type]
+          when :point
+            columns << build_point_geometry_column(column, column_options)
+          when :line
+            columns << build_line_geometry_column(column, column_options)
+          when :polygon
+            columns << build_polygon_geometry_column(column, column_options)
+          end
+      
+        end
+    
+        # set the subquery, replacing the !bbox! macro with a real envelope
+    
+        subquery = @table.gsub("!bbox!", build_envelope)
+    
+        # set intersects condition if the bbox option is specified
+    
+        if @bbox_column
+          conditions = "WHERE #{quote(@bbox_column)} && #{build_envelope}"
+        else
+          conditions = ""
+        end
+    
+        # put the query together
+    
+        query = "SELECT #{columns.join(", ")} FROM #{subquery} #{conditions}"
+        
+      end
     
       def process_result(result, length)
         

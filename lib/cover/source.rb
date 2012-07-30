@@ -69,18 +69,18 @@ module Cover
       bbox = index.bbox(@geometry_srid)
     
       parameters = {
-        "translate_x" => -bbox[:left],
-        "translate_y" => -bbox[:top],
-        "scale_x" => scale.to_f / bbox[:width],
-        "scale_y" => scale.to_f / -bbox[:height],
-        "left" => bbox[:left],
-        "top" => bbox[:top],
-        "right" => bbox[:right],
-        "bottom" => bbox[:bottom],
-        "width" => bbox[:width],
-        "height" => bbox[:height],
-        "unit" => bbox[:width] / scale.to_f,
-        "srid" => @geometry_srid
+        "translate_x::float" => -bbox[:left],
+        "translate_y::float" => -bbox[:top],
+        "scale_x::float" => scale.to_f / bbox[:width],
+        "scale_y::float" => scale.to_f / -bbox[:height],
+        "left::float" => bbox[:left],
+        "top::float" => bbox[:top],
+        "right::float" => bbox[:right],
+        "bottom::float" => bbox[:bottom],
+        "width::float" => bbox[:width],
+        "height::float" => bbox[:height],
+        "unit::float" => bbox[:width] / scale.to_f,
+        "srid::int" => @geometry_srid
       }
     
       # build [query, parameters] from the query and named parameters
@@ -140,18 +140,18 @@ module Cover
       bbox = index.bbox(@geometry_srid)
     
       parameters = {
-        "translate_x" => -bbox[:left],
-        "translate_y" => -bbox[:top],
-        "scale_x" => scale.to_f / bbox[:width],
-        "scale_y" => scale.to_f / -bbox[:height],
-        "left" => bbox[:left],
-        "top" => bbox[:top],
-        "right" => bbox[:right],
-        "bottom" => bbox[:bottom],
-        "width" => bbox[:width],
-        "height" => bbox[:height],
-        "unit" => bbox[:width] / scale.to_f,
-        "srid" => @geometry_srid
+        "translate_x::float" => -bbox[:left],
+        "translate_y::float" => -bbox[:top],
+        "scale_x::float" => scale.to_f / bbox[:width],
+        "scale_y::float" => scale.to_f / -bbox[:height],
+        "left::float" => bbox[:left],
+        "top::float" => bbox[:top],
+        "right::float" => bbox[:right],
+        "bottom::float" => bbox[:bottom],
+        "width::float" => bbox[:width],
+        "height::float" => bbox[:height],
+        "unit::float" => bbox[:width] / scale.to_f,
+        "srid::int" => @geometry_srid
       }
     
       # build [query, parameters] from the query and named parameters
@@ -205,7 +205,9 @@ module Cover
         numbered = []
   
         named.each do |name, value|
-          if result.gsub!(":#{name}", "$#{numbered.size + 1}")
+          name, type = name.split("::")
+          
+          if result.gsub!(":#{name}", "$#{numbered.size + 1}::#{type}")
             numbered << value
           end
         end
@@ -218,10 +220,10 @@ module Cover
   ST_AsGeoJSON(
     ST_TransScale(
       #{quote(name)},
-      :translate_x::float,
-      :translate_y::float,
-      :scale_x::float,
-      :scale_y::float
+      :translate_x,
+      :translate_y,
+      :scale_x,
+      :scale_y
     ),
     0
   ) AS #{quote(name + "_geometry_json")}
@@ -236,10 +238,10 @@ module Cover
         #{build_simplify(name, options[:simplify])},
         #{build_envelope}
       ),
-      :translate_x::float,
-      :translate_y::float,
-      :scale_x::float,
-      :scale_y::float
+      :translate_x,
+      :translate_y,
+      :scale_x,
+      :scale_y
     ),
     0
   ) AS #{quote(name + "_geometry_json")}
@@ -259,10 +261,10 @@ module Cover
           #{build_envelope}
         )
       ),
-      :translate_x::float,
-      :translate_y::float,
-      :scale_x::float,
-      :scale_y::float
+      :translate_x,
+      :translate_y,
+      :scale_x,
+      :scale_y
     ),
     0
   ) AS #{quote(name + "_geometry_json")}
@@ -271,14 +273,14 @@ module Cover
     
       def build_simplify(name, simplify)
         if simplify && simplify > 0
-          "ST_SimplifyPreserveTopology(#{quote(name)}, :unit::float * #{simplify}::float)"
+          "ST_SimplifyPreserveTopology(#{quote(name)}, :unit * #{simplify})"
         else
           quote(name)
         end
       end
     
       def build_envelope
-        "ST_MakeEnvelope(:left::float, :top::float, :right::float, :bottom::float, :srid::int)"
+        "ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)"
       end
     
       def quote(column)

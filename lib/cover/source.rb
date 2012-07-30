@@ -29,7 +29,51 @@ module Cover
     
     def metatile_query_arguments(index, scale, size)
       
-      query = "SELECT 0 AS tile_index, * FROM (#{tile_query}) t"
+      query = <<-END
+WITH
+metatile AS
+(
+  SELECT *
+  FROM planet_osm_line
+  WHERE ST_Intersects(way, ST_MakeEnvelope(:left, :top, :left + (:size * :width), :top - (:size * :height), 900913))
+),
+
+tiles AS
+(
+  SELECT
+    (x * :size) + y AS index,
+    ST_MakeEnvelope(
+      :left + (x * :width),
+      :top - (y * :height),
+      :left + ((x+1) * :width),
+      :top - ((y+1) * :height),
+      :srid
+    ) as bbox,
+    -:left - (x * :width) AS translate_x,
+    -:top + (y * :height) AS translate_y
+  FROM
+    (SELECT generate_series(0, :size - 1)) as x(x)
+    CROSS JOIN
+    (SELECT generate_series(0, :size - 1)) as y(y)
+)
+
+SELECT
+  tiles.index AS tile_index,
+  metatile.osm_id AS osm_id,
+  ST_AsGeoJSON(
+    ST_TransScale(
+      ST_Intersection(metatile.way, tiles.bbox),
+      tiles.translate_x,
+      tiles.translate_y,
+      :scale_x,
+      :scale_y
+    ),
+    0
+  ) AS way_geometry_json
+FROM
+  metatile INNER JOIN tiles
+  ON ST_Intersects(metatile.way, tiles.bbox)
+END
     
       # calculate parameters
     
@@ -47,7 +91,8 @@ module Cover
         "width" => [bbox[:width], "float"],
         "height" => [bbox[:height], "float"],
         "unit" => [bbox[:width] / scale.to_f, "float"],
-        "srid" => [@geometry_srid, "int"]
+        "srid" => [@geometry_srid, "int"],
+        "size" => [size, "int"]
       }
     
       # build [query, parameters] from the query and named parameters

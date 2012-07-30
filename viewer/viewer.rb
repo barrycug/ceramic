@@ -101,8 +101,7 @@ module Cover
       end
       
       index = Cover::Index.new(params[:z].to_i, params[:x].to_i, params[:y].to_i)
-      
-      @tiles = @maker.render_metatile(index, 2)
+      @tiles = @maker.render_metatile(index, (params[:size] || "8").to_i)
     
       erb :metatile
       

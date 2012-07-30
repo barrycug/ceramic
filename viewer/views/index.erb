@@ -48,6 +48,13 @@
         options.maxZoom = <%= @zoom.max %>;
       <% end %>
       
+      var center;
+        
+      if (center = window.location.hash.slice(1).match(/(\d+)\/(\-?\d+(?:\.\d+)?)\/(\-?\d+(?:\.\d+)?)/)) {
+        options.center = new L.LatLng(parseFloat(center[2]), parseFloat(center[3]));
+        options.zoom = parseInt(center[1]);
+      }
+      
       
       // Set up the map
       
@@ -80,11 +87,6 @@
         handleHashChange();
         
       });
-      
-      
-      // Respond to initial hash if present
-      
-      handleHashChange();
       
       
       // Inspect popup

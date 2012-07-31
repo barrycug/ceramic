@@ -20,7 +20,10 @@ module Cover
       
       arguments = metatile_query_arguments(index, scale, size)
       
-      puts arguments[0].gsub(/\$(\d+)/) { |i| "(#{arguments[1][i.to_i + 1]})" }
+      # puts arguments[0].gsub(/\$(\d+)/) { |i| "(#{arguments[1][i.to_i - 1]})" }
+      
+      # puts arguments[0]
+      # puts arguments[1].inspect
       
       result = @connection.exec(*arguments)
       rows = process_result(result, size * size)
@@ -32,80 +35,83 @@ module Cover
     
     def metatile_query_arguments(index, scale, size)
       
+      # Prepare the list of columns to select. Geometry columns
+      # are named <column name>_geometry_json, and include simplification,
+      # intersection, etc.
+      
       columns = ["*"]
   
       @geometry_column_options.each do |column, column_options|
     
         case column_options[:type]
         when :point
-          columns << build_point_geometry_column(column, column_options).gsub("!bbox!", "tiles.bbox")
+          columns << build_point_geometry_column(column, column_options)
         when :line
-          columns << build_line_geometry_column(column, column_options).gsub("!bbox!", "tiles.bbox")
+          columns << build_line_geometry_column(column, column_options)
         when :polygon
-          columns << build_polygon_geometry_column(column, column_options).gsub("!bbox!", "tiles.bbox")
+          columns << build_polygon_geometry_column(column, column_options)
         end
     
       end
+      
+      # Replace the !bbox! placeholder in the table/subquery with the area
+      # of the entire metatile. Since we use this subquery once in the "metatile"
+      # subquery, we want it to catch everything in the metatile.
   
       subquery = @table.gsub("!bbox!", "ST_MakeEnvelope(:left, :top, :left + (:size * :width), :top - (:size * :height), :srid)")
       
+      # Build the query. We select the data in the metatile using the && operator
+      # for intersection, and then select the contents of each tile from that.
+      
       query = <<-END
 WITH
-metatile AS
-(
-  SELECT *
-  FROM #{subquery}
-  WHERE #{quote(@bbox_column)} && ST_MakeEnvelope(:left, :top, :left + (:size * :width), :top - (:size * :height), :srid)
-),
-
-tiles AS
-(
-  SELECT
-    (x * :size) + y AS index,
-    ST_MakeEnvelope(
-      :left + (x * :width),
-      :top - (y * :height),
-      :left + ((x+1) * :width),
-      :top - ((y+1) * :height),
-      :srid
-    ) as bbox,
-    -:left - (x * :width) AS translate_x,
-    -:top + (y * :height) AS translate_y
-  FROM
-    (SELECT generate_series(0, :size - 1)) as x(x)
-    CROSS JOIN
-    (SELECT generate_series(0, :size - 1)) as y(y)
-)
+  metatile AS (
+    SELECT *
+    FROM #{subquery}
+    WHERE #{quote(@bbox_column)} && ST_MakeEnvelope(:left, :top, :left + (:size * :width), :top - (:size * :height), :srid)
+  ),
+  
+  tiles AS (
+    SELECT
+      (x * :size) + y AS __index,
+      ST_MakeEnvelope(
+        :left + (x * :width),
+        :top - (y * :height),
+        :left + ((x+1) * :width),
+        :top - ((y+1) * :height),
+        :srid
+      ) as __bbox,
+      -:left - (x * :width) AS __translate_x,
+      -:top + (y * :height) AS __translate_y,
+      :scale / :width AS __scale_x,
+      -:scale / :height AS __scale_y
+    FROM
+      (SELECT generate_series(0, :size - 1)) as x(x)
+      CROSS JOIN
+      (SELECT generate_series(0, :size - 1)) as y(y)
+  )
 
 SELECT
-  #{columns.join(", ")},
-  tiles.index AS tile_index
+  #{columns.join(", ")}
 FROM
   metatile INNER JOIN tiles
-  ON ST_Intersects(#{quote(@bbox_column)}, tiles.bbox)
+  ON ST_Intersects(#{quote(@bbox_column)}, tiles.__bbox)
 END
     
-      # calculate parameters
+      # Given the index's bbox, build query arguments.
     
       bbox = index.bbox(@geometry_srid)
     
       parameters = {
-        "translate_x" => [-bbox[:left], "float"],
-        "translate_y" => [-bbox[:top], "float"],
-        "scale_x" => [scale.to_f / bbox[:width], "float"],
-        "scale_y" => [scale.to_f / -bbox[:height], "float"],
+        "scale" => [scale.to_f, "float"],
         "left" => [bbox[:left], "float"],
         "top" => [bbox[:top], "float"],
-        "right" => [bbox[:right], "float"],
-        "bottom" => [bbox[:bottom], "float"],
         "width" => [bbox[:width], "float"],
         "height" => [bbox[:height], "float"],
         "unit" => [bbox[:width] / scale.to_f, "float"],
         "srid" => [@geometry_srid, "int"],
         "size" => [size, "int"]
       }
-    
-      # build [query, parameters] from the query and named parameters
   
       build_query_arguments(query, parameters)
       
@@ -137,8 +143,9 @@ END
               row[column] = value.to_i
             elsif @type_conversions[column] == :real
               row[column] = value.to_f
-            elsif column == "tile_index"
+            elsif column == "__index"
               index = value.to_i
+            elsif column == "__bbox" || column == "__translate_x" || column == "__translate_y" || column == "__scale_x" || column == "__scale_y"
             else
               row[column] = value
             end
@@ -169,10 +176,10 @@ END
   ST_AsGeoJSON(
     ST_TransScale(
       #{name},
-      tiles.translate_x,
-      tiles.translate_y,
-      :scale_x,
-      :scale_y
+      tiles.__translate_x,
+      tiles.__translate_y,
+      tiles.__scale_x,
+      tiles.__scale_y
     ),
     0
   ) AS #{quote(name + "_geometry_json")}
@@ -185,12 +192,12 @@ END
     ST_TransScale(
       ST_Intersection(
         #{build_simplify(name, options[:simplify])},
-        !bbox!
+        tiles.__bbox
       ),
-      tiles.translate_x,
-      tiles.translate_y,
-      :scale_x,
-      :scale_y
+      tiles.__translate_x,
+      tiles.__translate_y,
+      tiles.__scale_x,
+      tiles.__scale_y
     ),
     0
   ) AS #{quote(name + "_geometry_json")}
@@ -207,13 +214,13 @@ END
             #{build_simplify(name, options[:simplify])},
             0
           ),
-          !bbox!
+          tiles.__bbox
         )
       ),
-      tiles.translate_x,
-      tiles.translate_y,
-      :scale_x,
-      :scale_y
+      tiles.__translate_x,
+      tiles.__translate_y,
+      tiles.__scale_x,
+      tiles.__scale_y
     ),
     0
   ) AS #{quote(name + "_geometry_json")}
@@ -222,14 +229,10 @@ END
     
       def build_simplify(name, simplify)
         if simplify && simplify > 0
-          "ST_SimplifyPreserveTopology(#{name}, :unit * #{simplify})"
+          "ST_SimplifyPreserveTopology(#{quote(name)}, :unit * #{simplify})"
         else
-          name
+          quote(name)
         end
-      end
-    
-      def build_envelope
-        "ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)"
       end
     
       def quote(column)

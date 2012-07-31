@@ -25,12 +25,11 @@
         z: <%= params[:z] %>,
         x: <%= params[:x] %>,
         y: <%= params[:y] %>,
-        size: <%= params[:size] || 4 %>
+        size: <%= params[:size] %>
       };
     
       var tiles = [<%= @tiles.join(",\n") %>];
       var i;
-      var size = Math.sqrt(tiles.length);
       
       for (i = 0; i < tiles.length; i++) {
       

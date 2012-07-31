@@ -73,7 +73,7 @@ Benchmark.benchmark(Benchmark::CAPTION, 20, Benchmark::FORMAT, "Total", "Mean") 
   
   metatiles.each do |tile|
     tms = tms + x.report("#{tile} (meta)") do
-      Cover.config.maker.render_metatile(tile, options[:size], StringIO.new)
+      Cover.config.maker.render_metatile(tile, options[:size])
     end
   end
   

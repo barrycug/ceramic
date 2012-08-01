@@ -9,7 +9,8 @@ require "cover"
 options = Trollop::options do
   opt :size, "Metatile size", :type => :integer, :default => 8
   opt :config, "Configuration file", :type => :string, :required => true
-  opt :index, "Tile index (z/x/y)", :type => :string, :required => true
+  opt :tile, "Tile index (z/x/y)", :type => :string, :required => true
+  opt :compress, "Compress individual tiles with gzip", :type => :boolean
 end
 
 if ARGV.size != 1
@@ -26,8 +27,8 @@ end
 
 # get tile index
 
-options[:index] = begin
-  Cover::Index.from_string(options[:index])
+options[:tile] = begin
+  Cover::Index.from_string(options[:tile])
 rescue ArgumentError
   Trollop::die "invalid tile index"
 end
@@ -46,7 +47,7 @@ end
 Cover.config.setup
 
 File.open(options[:output], "wb+") do |f|
-  Cover.config.maker.write_metatile(options[:index], options[:size], f)
+  Cover.config.maker.write_metatile(options[:tile], options[:size], f, :compress => options[:compress] ? :gzip : false)
 end
 
 Cover.config.teardown

@@ -82,7 +82,7 @@ tileset = Cover::Tileset.new(database)
 
 tileset.create_schema
 tileset.update_metadata(
-  format: "js.deflate",
+  format: "js.gzip",
   minzoom: options[:zoom].min,
   maxzoom: options[:zoom].max
 )
@@ -92,8 +92,8 @@ tileset.update_metadata(
 log.info "Rendering tiles..."
 
 indices.each_with_index do |index, i|
-  data = Cover.config.maker.render_tile(index)
-  tileset.insert_tile(index, Zlib.deflate(data, 9))
+  data = Cover.config.maker.render_tile(index, :compress => :gzip)
+  tileset.insert_tile(index, data)
   
   log.debug "#{i+1} tiles rendered (last was #{index.z}/#{index.x}/#{index.y}, #{data.bytesize} bytes)"
 end

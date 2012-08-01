@@ -1,4 +1,6 @@
 require "json"
+require "zlib"
+require "stringio"
 
 module Cover
 
@@ -43,7 +45,7 @@ module Cover
   
     end
     
-    def render_metatile(index, size)
+    def render_metatile(index, size, options = {})
       
       if (size & (size - 1)) != 0
         raise ArgumentError, "size must be a power of 2"
@@ -55,15 +57,25 @@ module Cover
       tiles = collect_features(Cover::Index.new(index.z, mx, my), size)
       
       tiles.map do |features|
-        JSON.dump(
+        tile = JSON.dump(
           "scale" => @scale,
           "features" => features
         )
+        
+        if options[:compress] == :gzip
+          s = StringIO.new
+          gz = Zlib::GzipWriter.new(s)
+          gz.write(tile)
+          gz.close
+          s.string
+        else
+          tile
+        end
       end
       
     end
     
-    def write_metatile(index, size, io)
+    def write_metatile(index, size, io, options = {})
       
       if (size & (size - 1)) != 0
         raise ArgumentError, "size must be a power of 2"
@@ -72,7 +84,7 @@ module Cover
       mx = index.x & ~(size - 1)
       my = index.y & ~(size - 1)
       
-      data = render_metatile(index, size)
+      data = render_metatile(index, size, options)
       
       io << ["META"].pack("a4")
       io << [size * size, mx, my, index.z].pack("l4")
@@ -90,15 +102,31 @@ module Cover
       
     end
   
-    def render_tile(index)
+    def render_tile(index, options = {})
       
       features = collect_features(index, 1).first
-    
-      JSON.dump(
+      
+      tile = JSON.dump(
         "scale" => @scale,
         "features" => features
       )
+      
+      if options[:compress] == :gzip
+        s = StringIO.new("")
+        gz = Zlib::GzipWriter.new(s)
+        gz.write(tile)
+        gz.close
+        s.string
+      else
+        tile
+      end
     
+    end
+    
+    def write_tile(index, io, options = {})
+      
+      io << render_tile(index, options)
+      
     end
     
     protected

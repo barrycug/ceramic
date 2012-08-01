@@ -3,35 +3,44 @@ require "rubygems"
 
 $LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
 $LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
+require "trollop"
 require "cover"
 
-def usage
-  puts "Usage: script/tile <config>.rb z/x/y"
-  exit
+options = Trollop::options do
+  opt :config, "Configuration file", :type => :string, :required => true
+  opt :tile, "Tile index (z/x/y)", :type => :string, :required => true
+  opt :compress, "Compress with gzip", :type => :boolean
 end
 
-if ARGV.size != 2
-  usage
+if ARGV.size != 1
+  Trollop::die "must specify an output path for the tile"
 end
 
-options = {
-  config: ARGV[0],
-  tile: ARGV[1]
-}
+options[:output] = ARGV[0]
 
-index = begin
+# get tile index
+
+options[:tile] = begin
   Cover::Index.from_string(options[:tile])
 rescue ArgumentError
-  usage
+  Trollop::die "invalid tile index"
 end
 
-require File.expand_path(options[:config])
+# config file
 
+require File.expand_path(options[:config])
+  
 if !Cover.config.respond_to?(:maker)
   puts "Config file must assign to Cover.config an object which responds to #maker"
   exit
 end
 
+# set up, write the tile, and teardown
+
 Cover.config.setup
-puts Cover.config.maker.render_tile(index)
+
+File.open(options[:output], "wb+") do |f|
+  Cover.config.maker.write_tile(options[:tile], f, :compress => options[:compress] ? :gzip : false)
+end
+
 Cover.config.teardown

@@ -1,8 +1,9 @@
 #!/usr/bin/env ruby
 require "rubygems"
+require "zlib"
 
-$LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
 $LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
 require "trollop"
 require "cover"
 
@@ -21,7 +22,7 @@ options[:output] = ARGV[0]
 # get tile index
 
 options[:tile] = begin
-  Cover::Index.from_string(options[:tile])
+  Cover::TileIndex::Slippy.new(options[:tile])
 rescue ArgumentError
   Trollop::die "invalid tile index"
 end
@@ -37,10 +38,18 @@ end
 
 # set up, write the tile, and teardown
 
-Cover.config.setup
+Cover.config.setup if Cover.config.respond_to?(:setup)
 
 File.open(options[:output], "wb+") do |f|
-  Cover.config.maker.write_tile(options[:tile], f, :compress => options[:compress] ? :gzip : false)
+  
+  if options[:compress]
+    gz = Zlib::GzipWriter.new(f, Zlib::BEST_COMPRESSION)
+    Cover.config.maker.write_tile(options[:tile], gz)
+    gz.close
+  else
+    Cover.config.maker.write_tile(options[:tile], f)
+  end
+  
 end
 
-Cover.config.teardown
+Cover.config.teardown if Cover.config.respond_to?(:teardown)

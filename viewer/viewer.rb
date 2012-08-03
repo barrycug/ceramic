@@ -1,6 +1,7 @@
 require "sinatra/base"
 require "cover"
 require "zlib"
+require "stringio"
 
 module Cover
 
@@ -90,24 +91,24 @@ module Cover
       
     end
     
-    get "/:z/:x/:y/metatile" do
-      
-      if @zoom && !@zoom.include?(params[:z].to_i)
-        halt 404
-      end
-      
-      if @tileset
-        halt 404
-      end
-      
-      params[:size] ||= "4"
-      
-      index = Cover::Index.new(params[:z].to_i, params[:x].to_i, params[:y].to_i)
-      @tiles = @maker.render_metatile(index, params[:size].to_i)
-    
-      erb :metatile
-      
-    end
+    # get "/:z/:x/:y/metatile" do
+    #   
+    #   if @zoom && !@zoom.include?(params[:z].to_i)
+    #     halt 404
+    #   end
+    #   
+    #   if @tileset
+    #     halt 404
+    #   end
+    #   
+    #   params[:size] ||= "4"
+    #   
+    #   index = Cover::Index.new(params[:z].to_i, params[:x].to_i, params[:y].to_i)
+    #   @tiles = @maker.render_metatile(index, params[:size].to_i)
+    # 
+    #   erb :metatile
+    #   
+    # end
   
     protected
   
@@ -116,7 +117,7 @@ module Cover
   
       def fetch_tile(z, x, y)
       
-        index = Cover::Index.new(z.to_i, x.to_i, y.to_i)
+        index = Cover::TileIndex::Slippy.new(z.to_i, x.to_i, y.to_i)
     
         if @tileset
           
@@ -130,7 +131,9 @@ module Cover
           
         else
           
-          @maker.render_tile(index)
+          io = StringIO.new("")
+          @maker.write_tile(index, io)
+          io.string
           
         end
         
@@ -140,7 +143,7 @@ module Cover
         
         if @tileset
           
-          index = Cover::Index.new(z.to_i, x.to_i, y.to_i)
+          index = Cover::TileIndex::Slippy.new(z.to_i, x.to_i, y.to_i)
           @tileset.select_hash(index)
           
         else

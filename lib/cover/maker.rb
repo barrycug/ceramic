@@ -26,9 +26,9 @@ module Cover
           result.each do |row|
             written = writer.write_feature(row, io)
             index += 1
-            io << "," if index < result.num_tuples && written
+            io << "," if index < result.count && written
           end
-          result.clear
+          result.clear if result.respond_to?(:clear)
         end
       end
   

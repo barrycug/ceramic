@@ -2,8 +2,8 @@ $LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
 
 require "cover/maker"
 require "cover/tile_index"
+require "cover/selection_builder"
 require "cover/source"
-require "cover/writer"
 require "cover/tileset"
 
 module Cover

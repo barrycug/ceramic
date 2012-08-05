@@ -123,6 +123,10 @@ module Cover
           geometry = line_geometry_column
           queries << "SELECT #{geometry}, #{columns} FROM planet_osm_line WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
           
+          columns, conditions = *columns_and_conditions(zoom, :roads)
+          geometry = roads_geometry_column
+          queries << "SELECT #{geometry}, #{columns} FROM planet_osm_roads WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
+          
           columns, conditions = *columns_and_conditions(zoom, :point)
           geometry = point_geometry_column
           queries << "SELECT #{geometry}, #{columns} FROM planet_osm_point WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
@@ -147,6 +151,24 @@ END
         end
         
         def line_geometry_column
+          <<-END
+ST_AsGeoJSON(
+  ST_TransScale(
+    ST_Intersection(
+      ST_SimplifyPreserveTopology(way, $5::float / $7::float),
+      ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)
+    ),
+    -$1::float,
+    -$2::float,
+    $7::float / $5::float,
+    -$7::float / $6::float
+  ),
+  0
+) AS way
+END
+        end
+        
+        def roads_geometry_column
           <<-END
 ST_AsGeoJSON(
   ST_TransScale(

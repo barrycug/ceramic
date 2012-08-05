@@ -1,16 +1,18 @@
+require "json"
+
 class SelectionConfig
 
   class Writer
   
     def write_feature(row, io)
-      if row["way"] == "{\"type\":\"GeometryCollection\",\"geometries\":[]}"
-        return false
-      end
-    
       io << "{"
       io << "\"type\":\"osm\","
       io << "\"id\":#{row["osm_id"]},"
       io << "\"geometry\":#{row["way"]},"
+      
+      if row.has_key?("point") && row["point"] =~ /(\[-?\d+,-?\d+\])/
+        io << "\"point\":#{$1},"
+      end
     
       tag_members = row.inject([]) do |members, (name, value)|
         members << "\"#{name}\":#{value.to_json}" unless %w(way point osm_id).include?(name) || value.nil?
@@ -22,8 +24,6 @@ class SelectionConfig
       io << "}"
     
       io << "}"
-      
-      true
     end
   
   end
@@ -84,7 +84,7 @@ class SelectionConfig
     
     @writer = Writer.new
     
-    @maker = Cover::Maker.new(:scale => 1024, :pairs => [[@osm_source, @writer]])
+    @maker = Cover::Maker.new(:scale => 8192, :pairs => [[@osm_source, @writer]])
     
   end
   

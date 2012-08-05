@@ -6,42 +6,69 @@ class SelectionBuilder
     builder.instance_eval { @selections }
   end
   
-  Selection = Struct.new(:selection, :conditions)
+  Selection = Struct.new(:selection, :context)
   
-  def initialize(context = [])
+  def initialize(context = {})
     @context = context
     @selections = []
   end
   
   def conditions(conditions, &block)
-    conditions = parse_conditions(conditions)
-    validate_context(@context + [conditions])
+    context = merge_conditions(@context, conditions)
     
-    builder = SelectionBuilder.new(@context + [conditions])
+    builder = self.class.new(context)
     builder.instance_eval(&block)
     
     @selections += builder.instance_eval { @selections }
   end
   
   def select(selection = nil, conditions)
-    conditions = parse_conditions(conditions)
-    
     validate_selection(selection)
-    validate_context(@context + [conditions])
+    context = merge_conditions(@context, conditions)
     
-    @selections << Selection.new(selection, @context + [conditions])
+    @selections << Selection.new(selection, context)
   end
   
   protected
   
+    # Raise errors if there's a problem with the selection.
+  
     def validate_selection(selection)
     end
     
-    def parse_conditions(conditions)
-      conditions
+    # Merge the inner condition with outer. If there is no outer condition
+    # defined, outer will be nil. This may be overridden by subclasses.
+    # The default behavior is to assemble an array of conditions. If there
+    # is a problem with merging this particular combination of conditions,
+    # an error should be raised.
+    
+    def merge_condition(key, outer, inner)
+      if outer.nil?
+        [inner]
+      else
+        outer + [inner]
+      end
     end
     
-    def validate_context(context)
+  private
+    
+    # Return a context hash with the new conditions merged into it.
+    # If there are problems with the conditions, raise an error.
+    
+    def merge_conditions(context, conditions)
+      
+      result = {}
+      
+      context.each do |key, value|
+        result[key] = value unless conditions.has_key?(key)
+      end
+      
+      conditions.each do |key, value|
+        result[key] = merge_condition(key, context[key], value)
+      end
+      
+      result
+      
     end
   
 end

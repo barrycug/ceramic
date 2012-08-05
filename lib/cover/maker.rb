@@ -21,14 +21,10 @@ module Cover
       def write_tile_features(tile_index, io)
         @pairs.each do |pair|
           source, writer = *pair
-          result = source.select(tile_index, @scale)
-          index = 0
-          result.each do |row|
-            written = writer.write_feature(row, io)
-            index += 1
-            io << "," if index < result.count && written
+          source.select_rows(tile_index, @scale).each.with_index do |row, index|
+            io << "," if index > 0
+            writer.write_feature(row, io)
           end
-          result.clear if result.respond_to?(:clear)
         end
       end
   

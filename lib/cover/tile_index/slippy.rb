@@ -18,6 +18,10 @@ module Cover
           raise ArgumentError, "expected a z/x/y path string or three integers"
         end
       end
+      
+      def to_s
+        "#{z}/#{x}/#{y}"
+      end
 
       def bounds
         mercator = GlobalMercator.new

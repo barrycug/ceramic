@@ -9,6 +9,11 @@
   </head>
   <body>
     
+    <ul>
+      <li>Fetch time: <%= "%.3f" % @fetch_time %> seconds</li>
+      <li>File size: <%= "%.3f" % (@tile.bytesize.to_f / (1024*1024)) %> MB, <%= "%.3f" % (Zlib.deflate(@tile, 9).bytesize.to_f / (1024*1024)) %> MB deflated</li>
+    </ul>
+    
     <canvas id="draw" width="1024" height="1024"></canvas>
     
     <script src="/debug_render.js"></script>

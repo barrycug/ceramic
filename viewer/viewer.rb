@@ -77,7 +77,11 @@ module Cover
         halt 404
       end
       
+      start = Time.now
+      
       @tile = fetch_tile(params[:z], params[:x], params[:y])
+      
+      @fetch_time = Time.now - start
       
       if @tile == nil
         halt 404

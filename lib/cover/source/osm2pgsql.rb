@@ -115,29 +115,21 @@ module Cover
           
           queries = []
           
-          columns, conditions, group = *columns_and_conditions(zoom, :polygon)
-          if columns != ""
-            geometry = polygon_geometry_column
-            queries << "SELECT #{geometry}, #{columns} FROM planet_osm_polygon WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)) GROUP BY #{group}, point"
-          end
+          columns, conditions = *columns_and_conditions(zoom, :polygon)
+          geometry = polygon_geometry_column
+          queries << "SELECT #{geometry}, #{columns} FROM planet_osm_polygon WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
           
-          columns, conditions, group = *columns_and_conditions(zoom, :line)
-          if columns != ""
-            geometry = line_geometry_column
-            queries << "SELECT #{geometry}, #{columns} FROM planet_osm_line WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)) GROUP BY #{group}"
-          end
+          columns, conditions = *columns_and_conditions(zoom, :line)
+          geometry = line_geometry_column
+          queries << "SELECT #{geometry}, #{columns} FROM planet_osm_line WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
           
-          columns, conditions, group = *columns_and_conditions(zoom, :roads)
-          if columns != ""
-            geometry = roads_geometry_column
-            queries << "SELECT #{geometry}, #{columns} FROM planet_osm_roads WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)) GROUP BY #{group}"
-          end
+          columns, conditions = *columns_and_conditions(zoom, :roads)
+          geometry = roads_geometry_column
+          queries << "SELECT #{geometry}, #{columns} FROM planet_osm_roads WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
           
-          columns, conditions, group = *columns_and_conditions(zoom, :point)
-          if columns != ""
-            geometry = point_geometry_column
-            queries << "SELECT #{geometry}, #{columns} FROM planet_osm_point WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
-          end
+          columns, conditions = *columns_and_conditions(zoom, :point)
+          geometry = point_geometry_column
+          queries << "SELECT #{geometry}, #{columns} FROM planet_osm_point WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
           
           queries
 
@@ -163,7 +155,7 @@ END
 ST_AsGeoJSON(
   ST_TransScale(
     ST_Intersection(
-      ST_Union(ST_SimplifyPreserveTopology(way, $5::float / $7::float)),
+      ST_SimplifyPreserveTopology(way, $5::float / $7::float),
       ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)
     ),
     -$1::float,
@@ -181,7 +173,7 @@ END
 ST_AsGeoJSON(
   ST_TransScale(
     ST_Intersection(
-      ST_Union(ST_SimplifyPreserveTopology(way, $5::float / $7::float)),
+      ST_SimplifyPreserveTopology(way, $5::float / $7::float),
       ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)
     ),
     -$1::float,
@@ -198,11 +190,9 @@ END
           <<-END
 ST_AsGeoJSON(
   ST_TransScale(
-    ST_ForceRHR(
-      ST_Intersection(
-        ST_Union(ST_Buffer(ST_SimplifyPreserveTopology(way, $5::float / $7::float), 0)),
-        ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)
-      )
+    ST_Intersection(
+      ST_Buffer(ST_SimplifyPreserveTopology(way, $5::float / $7::float), 0),
+      ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)
     ),
     -$1::float,
     -$2::float,
@@ -226,7 +216,7 @@ END
         
         def columns_and_conditions(zoom, table)
           
-          # find all selections for the table
+          # find all selections for the planet_osm_line table
           
           table_selections = @selections.select do |s|
             !s.context.has_key?(:table) || s.context[:table].include?(table)
@@ -252,10 +242,10 @@ END
           
           # prepare cases for each column
     
-          columns = column_conditions.map do |(column, conditions)|
+          columns = (["osm_id"] + column_conditions.map do |(column, conditions)|
             condition = conditions.map { |c| "(#{c})" }.join(" OR ")
             "CASE WHEN #{condition} THEN #{@connection.quote_ident(column)} ELSE NULL END AS #{@connection.quote_ident(column)}"
-          end.join(", ")
+          end).join(", ")
           
           # prepare conditions
     
@@ -271,11 +261,7 @@ END
             end
           end.compact).join(" OR ")
           
-          group = column_conditions.map do |(column, conditions)|
-            @connection.quote_ident(column)
-          end.uniq.join(", ")
-          
-          [columns, conditions, group]
+          [columns, conditions]
           
         end
       

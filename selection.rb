@@ -266,7 +266,7 @@ class SelectionConfig
   end
   
   def setup
-    @connection = PG.connect(dbname: "gis")
+    @connection = PG.connect(dbname: ENV["DBNAME"] || "gis")
     @osm_source.connection = @connection
   end
   

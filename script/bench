@@ -61,26 +61,32 @@ metatiles = process_index_list(options[:metatiles] || [])
 
 # do benchmarking
 
-Benchmark.benchmark(Benchmark::CAPTION, 20, Benchmark::FORMAT, "Total", "Mean") do |x|
-  
-  tms = Benchmark::Tms.new
-  
-  tiles.each do |tile|
-    tms = tms + x.report(tile) do
-      io = StringIO.new("")
-      Cover.config.maker.write_tile(tile, io)
-    end
-  end
-  
-  # metatiles.each do |tile|
-  #   tms = tms + x.report("#{tile} (meta)") do
-  #     Cover.config.maker.render_metatile(tile, options[:size])
-  #   end
-  # end
-  
-  [tms, tms / (tiles.size + metatiles.size)]
+puts "%-20s  %7s  %7s" % ["Tile", "Time", "Size"]
+puts "=" * 38
 
+total_time = 0.0
+total_size = 0
+
+tiles.each do |tile|
+  
+  io = StringIO.new("")
+  
+  start = Time.now
+  Cover.config.maker.write_tile(tile, io)
+  
+  time = Time.now - start
+  size = io.string.bytesize
+  
+  total_time += time
+  total_size += size
+  
+  puts "%-20s  % 7.3f  % 7.3f" % [tile, time, size.to_f / (1024 * 1024)]
+  
 end
+
+puts "-" * 38
+puts "%-20s  % 7.3f  % 7.3f" % ["Total", total_time, (total_size.to_f / (1024 * 1024))]
+puts "%-20s  % 7.3f  % 7.3f" % ["Mean", total_time / tiles.size, (total_size.to_f / (1024 * 1024)) / tiles.size]
 
 if Cover.config.respond_to?(:teardown)
   Cover.config.teardown

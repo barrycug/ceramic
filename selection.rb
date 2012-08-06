@@ -47,7 +47,7 @@ class SelectionConfig
         select %w(highway tunnel bridge), :zoom => "12-", :sql => "highway IN ('trunk_link', 'residential', 'unclassified', 'road')"
         select %w(highway tunnel bridge), :zoom => "13-", :sql => "highway IN ('motorway_link', 'trunk_link', 'primary_link', 'secondary_link')"
         select %w(highway tunnel bridge railway layer), :zoom => "14-", :sql => "highway IN ('minor') OR railway IN ('rail')"
-        select %w(highway tunnel bridge railway layer), :zoom => "15-", :sql => "highway IN ('footpath', 'track', 'footway', 'steps', 'pedestrian', 'path', 'cycleway') OR railway IN ('rail', 'tram', 'light_rail', 'narrow_gauge', 'monorail')"
+        select %w(highway tunnel bridge railway layer), :zoom => "15-", :sql => "highway IN ('footpath', 'track', 'footway', 'steps', 'pedestrian', 'path', 'cycleway', 'service') OR railway IN ('rail', 'tram', 'light_rail', 'narrow_gauge', 'monorail')"
       end
 
       # addressing (this and below based on OSM's Mapnik stylesheets)

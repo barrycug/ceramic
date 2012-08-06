@@ -9,12 +9,31 @@
   </head>
   <body>
     
-    <ul>
-      <li>Fetch time: <%= "%.3f" % @fetch_time %> seconds</li>
-      <li>File size: <%= "%.3f" % (@tile.bytesize.to_f / (1024*1024)) %> MB, <%= "%.3f" % (Zlib.deflate(@tile, 9).bytesize.to_f / (1024*1024)) %> MB deflated</li>
-    </ul>
+    <article>
+      <canvas id="draw" width="512" height="512"></canvas>
+    </article>
     
-    <canvas id="draw" width="1024" height="1024"></canvas>
+    <article>
+      <h1>Tile stats</h1>
+    
+      <ul>
+        <li>Fetch time: <%= "%.3f" % @fetch_time %> seconds</li>
+        <li>File size: <%= "%.3f" % (@tile.bytesize.to_f / (1024*1024)) %> MB, <%= "%.3f" % (Zlib.deflate(@tile, 9).bytesize.to_f / (1024*1024)) %> MB deflated</li>
+        <li>Feature count: <%= @feature_count %></li>
+      </ul>
+    </article>
+    
+    <article>
+      <h1>Feature distribution</h1>
+      
+      <p>Combined keys: <%= @combined_keys.join(", ") %></p>
+    
+      <ul>
+        <% @distribution.each do |(tags, count)| %>
+          <li><%= tags %>: <%= count %></li>
+        <% end %>
+      </ul>
+    </article>
     
     <script src="/debug_render.js"></script>
     <script>

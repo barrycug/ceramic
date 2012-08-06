@@ -2,6 +2,7 @@ require "sinatra/base"
 require "cover"
 require "zlib"
 require "stringio"
+require "json"
 
 module Cover
 
@@ -78,9 +79,7 @@ module Cover
       end
       
       start = Time.now
-      
       @tile = fetch_tile(params[:z], params[:x], params[:y])
-      
       @fetch_time = Time.now - start
       
       if @tile == nil
@@ -89,6 +88,29 @@ module Cover
       
       if @format == "js.deflate"
         @tile = Zlib.inflate(@tile)
+      end
+      
+      parsed = JSON.parse(@tile)
+      
+      @feature_count = parsed["features"].size
+      
+      @combined_keys = %w(name ref ele layer operator)
+      
+      @distribution = parsed["features"].inject({}) do |dist, feature|
+        tags = feature["tags"].inject({}) do |t, (key, value)|
+          if @combined_keys.include?(key)
+            t[key] = true
+          else
+            t[key] = value
+          end
+          t
+        end
+        dist[tags] = (dist[tags] || 0) + 1
+        dist
+      end.to_a.sort_by do |p|
+        p[1]
+      end.reverse.map do |p|
+        [JSON.dump(p[0]), p[1]]
       end
     
       erb :inspect

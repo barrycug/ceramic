@@ -2,7 +2,7 @@ require "json"
 
 class SelectionConfig
 
-  class Writer
+  class OSMWriter
   
     def write_feature(row, io)
       io << "{"
@@ -27,8 +27,25 @@ class SelectionConfig
     end
   
   end
+
+  class CoastlineWriter
+    
+    def initialize(options = {})
+      @geometry = options[:geometry] || "the_geom"
+    end
+  
+    def write_feature(row, io)
+      io << "{"
+      io << "\"type\":\"coastline\","
+      io << "\"geometry\":#{row[@geometry]}"
+      io << "}"
+    end
+  
+  end
   
   def initialize
+    
+    @coastline_source = Cover::Source::Coastline.new("coastlines", :geometry => "geom")
     
     @osm_source = Cover::Source::OSM2PGSQL.new do
       
@@ -181,15 +198,18 @@ class SelectionConfig
       
     end
     
-    @writer = Writer.new
+    @osm_writer = OSMWriter.new
+    @coastline_writer = CoastlineWriter.new(:geometry => "geom")
     
-    @maker = Cover::Maker.new(:scale => 1024, :pairs => [[@osm_source, @writer]])
+    @maker = Cover::Maker.new(:scale => 1024, :pairs => [[@coastline_source, @coastline_writer], [@osm_source, @osm_writer]])
     
   end
   
   def setup
     @connection = PG.connect(dbname: ENV["DBNAME"] || "gis")
+    
     @osm_source.connection = @connection
+    @coastline_source.connection = @connection
   end
   
   def teardown

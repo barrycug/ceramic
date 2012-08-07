@@ -97,15 +97,17 @@ module Cover
       @combined_keys = %w(name ref ele layer operator)
       
       @distribution = parsed["features"].inject({}) do |dist, feature|
-        tags = feature["tags"].inject({}) do |t, (key, value)|
-          if @combined_keys.include?(key)
-            t[key] = true
-          else
-            t[key] = value
+        if Enumerable === feature["tags"]
+          tags = feature["tags"].inject({}) do |t, (key, value)|
+            if @combined_keys.include?(key)
+              t[key] = true
+            else
+              t[key] = value
+            end
+            t
           end
-          t
+          dist[tags] = (dist[tags] || 0) + 1
         end
-        dist[tags] = (dist[tags] || 0) + 1
         dist
       end.to_a.sort_by do |p|
         p[1]

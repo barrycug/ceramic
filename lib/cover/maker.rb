@@ -19,13 +19,22 @@ module Cover
     private
   
       def write_tile_features(tile_index, io)
+        
+        written = false
+        
         @pairs.each do |pair|
+          
           source, writer = *pair
+          
           source.select_rows(tile_index, @scale).each.with_index do |row, index|
-            io << "," if index > 0
+            io << "," if written || index > 0
+            
             writer.write_feature(row, io)
+            written = true
           end
+          
         end
+        
       end
   
   end

@@ -2,6 +2,7 @@
 require "rubygems"
 require "benchmark"
 require "stringio"
+require "zlib"
 
 $LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
 $LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
@@ -61,11 +62,12 @@ metatiles = process_index_list(options[:metatiles] || [])
 
 # do benchmarking
 
-puts "%-20s  %7s  %7s" % ["Tile", "Time", "Size"]
-puts "=" * 38
+puts "%20s  %9s  %9s  %9s" % ["", "Time", "Size", "Deflated"]
+puts "=" * 53
 
 total_time = 0.0
 total_size = 0
+total_compressed_size = 0
 
 tiles.each do |tile|
   
@@ -76,17 +78,19 @@ tiles.each do |tile|
   
   time = Time.now - start
   size = io.string.bytesize
+  compressed_size = Zlib.deflate(io.string).bytesize
   
   total_time += time
   total_size += size
+  total_compressed_size += compressed_size
   
-  puts "%-20s  % 7.3f  % 7.3f" % [tile, time, size.to_f / (1024 * 1024)]
+  puts "%-20s  % 7.2f s  % 6.1f kB  % 6.1f kB" % [tile, time, size.to_f / 1000, compressed_size.to_f / 1000]
   
 end
 
-puts "-" * 38
-puts "%-20s  % 7.3f  % 7.3f" % ["Total", total_time, (total_size.to_f / (1024 * 1024))]
-puts "%-20s  % 7.3f  % 7.3f" % ["Mean", total_time / tiles.size, (total_size.to_f / (1024 * 1024)) / tiles.size]
+puts "-" * 53
+puts "%-20s  % 7.2f s  % 6.1f kB  % 6.1f kB" % ["Total", total_time, total_size.to_f / 1000, total_compressed_size.to_f / 1000]
+puts "%-20s  % 7.2f s  % 6.1f kB  % 6.1f kB" % ["Mean", total_time / tiles.size, (total_size.to_f / 1000) / tiles.size, (total_compressed_size.to_f / 1000) / tiles.size]
 
 if Cover.config.respond_to?(:teardown)
   Cover.config.teardown

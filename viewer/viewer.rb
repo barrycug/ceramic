@@ -90,7 +90,7 @@ module Cover
         @tile = Zlib.inflate(@tile)
       end
       
-      parsed = JSON.parse(@tile)
+      parsed = JSON.parse(@tile.force_encoding("UTF-8"))
       
       @feature_count = parsed["features"].size
       

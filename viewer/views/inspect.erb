@@ -10,21 +10,22 @@
   <body>
     
     <article>
-      <canvas id="draw" width="512" height="512"></canvas>
+      <canvas id="debug" width="512" height="512"></canvas>
+      <canvas id="kothic" width="512" height="512"></canvas>
     </article>
     
     <article>
       <h1>Tile stats</h1>
     
       <ul>
-        <li>Fetch time: <%= "%.3f" % @fetch_time %> seconds</li>
-        <li>File size: <%= "%.3f" % (@tile.bytesize.to_f / (1024*1024)) %> MB, <%= "%.3f" % (Zlib.deflate(@tile, 9).bytesize.to_f / (1024*1024)) %> MB deflated</li>
+        <li>Fetch time: <%= "%.2f" % @fetch_time %> s</li>
+        <li>File size: <%= "%.1f" % (@tile.bytesize.to_f / 1000) %> kB, <%= "%.1f" % (Zlib.deflate(@tile, 9).bytesize.to_f / 1000) %> kB deflated</li>
         <li>Feature count: <%= @feature_count %></li>
       </ul>
     </article>
     
     <article>
-      <h1>Feature distribution</h1>
+      <h1>Feature tag distribution</h1>
       
       <p>Combined keys: <%= @combined_keys.join(", ") %></p>
     
@@ -36,32 +37,71 @@
     </article>
     
     <script src="/debug_render.js"></script>
+    <script src="/kothic.js"></script>
+    <script src="/osmosnimki.js"></script>
     <script>
     
-      var data = <%= @tile %>;
+      MapCSS.preloadSpriteImage("osmosnimki-maps", "/osmosnimki.png");
       
-      var canvas = document.getElementById("draw");
-      var context = canvas.getContext("2d");
+      MapCSS.onImagesLoad = function() {
+    
+        var data = <%= @tile %>;
+        var zoom = <%= params[:z] %>;
       
-      // draw the tile data
+        var canvas, context;
       
-      DebugRender.renderTile(canvas, data);
+        // draw with kothic
       
-      // draw grid
+        var kothic = new Kothic({
+          buffered: false,
+          styles: MapCSS.availableStyles,
+          locales: ['be', 'ru', 'en']
+        });
       
-      var i;
+        var kothicData = {};
       
-      context.beginPath();
+        kothicData.granularity = data.scale;
+    
+        kothicData.features = data.features.map(function(feature) {
+          if (feature.type === "osm") {
+            feature.type = feature.geometry.type;
+            feature.coordinates = feature.geometry.coordinates;
+            feature.properties = feature.tags;
+          } else if (feature.type === "coastline") {
+            feature.type = feature.geometry.type;
+            feature.coordinates = feature.geometry.coordinates;
+            feature.properties = {"natural":"coastline"};
+          }
+          return feature;
+        });
+    
+        canvas = document.getElementById("kothic");
+        kothic.render(canvas, kothicData, zoom, function(t) {});
       
-      for (i = 4; i < canvas.width; i += 4) {
-        context.moveTo(i - 0.5, 0);
-        context.lineTo(i - 0.5, canvas.height);
-        context.moveTo(0, i - 0.5);
-        context.lineTo(canvas.width, i - 0.5);
+        // draw with debug renderer
+      
+        canvas = document.getElementById("debug");
+        context = canvas.getContext("2d");
+      
+        DebugRender.renderTile(canvas, data);
+      
+        // draw grid
+      
+        var i;
+      
+        context.beginPath();
+      
+        for (i = 4; i < canvas.width; i += 4) {
+          context.moveTo(i - 0.5, 0);
+          context.lineTo(i - 0.5, canvas.height);
+          context.moveTo(0, i - 0.5);
+          context.lineTo(canvas.width, i - 0.5);
+        }
+      
+        context.strokeStyle = "rgba(0, 0, 0, 0.05)";
+        context.stroke();
+        
       }
-      
-      context.strokeStyle = "rgba(0, 0, 0, 0.05)";
-      context.stroke();
       
     </script>
     

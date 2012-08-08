@@ -85,7 +85,7 @@ Cover.config.teardown if Cover.config.respond_to?(:teardown)
 
 # write gallery
 
-erb = ERB.new(File.read(File.dirname(__FILE__) + "/../templates/gallery.erb"))
+erb = ERB.new(File.read(File.dirname(__FILE__) + "/../gallery_templates/gallery.erb"))
 
 File.open(File.join(options[:output], "index.html"), "w+") do |f|
   f << erb.result(binding)
@@ -93,5 +93,5 @@ end
 
 # copy rendering script
 
-FileUtils.cp(File.dirname(__FILE__) + "/../viewer/public/debug_render.js", File.join(options[:output], "render.js"))
+FileUtils.cp(File.dirname(__FILE__) + "/../gallery_templates/render.js", File.join(options[:output], "render.js"))
 

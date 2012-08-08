@@ -1,0 +1,97 @@
+#!/usr/bin/env ruby
+require "rubygems"
+require "zlib"
+require "fileutils"
+require "erb"
+require "json"
+
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
+require "trollop"
+require "cover"
+
+options = Trollop::options do
+  opt :config, "Configuration file", :type => :string, :required => true
+  opt :tiles, "Tile indices (z/x/y)", :type => :strings, :required => true
+  opt :output, "Output directory", :type => :string, :required => true
+  opt :watch, "Watch config file for changes?", :type => :boolean, :default => false
+end
+
+# assemble tile indices
+
+def process_index_list(list)
+  
+  result = []
+  
+  list.each do |index|
+  
+    # if an index is a file, read tile indexes from that file, skipping
+    # lines that start with "#".
+  
+    if File.exist?(index)
+      File.open(index, "r").each_line do |line|
+        next if line =~ /^#/ || line =~ /^\s*$/
+        result << Cover::TileIndex::Slippy.new(line)
+      end
+    else
+      result << Cover::TileIndex::Slippy.new(index)
+    end
+  
+  end
+  
+  result
+  
+end
+
+tiles = process_index_list(options[:tiles] || [])
+
+# create output directory
+
+FileUtils.mkdir_p(options[:output])
+
+# load config and do setup
+
+require File.expand_path(options[:config])
+  
+if !Cover.config.respond_to?(:maker)
+  puts "Config file must assign to Cover.config an object which responds to #maker"
+  exit
+end
+
+Cover.config.setup if Cover.config.respond_to?(:setup)
+
+# write tiles to output dir
+
+@tiles = []
+
+tiles.each do |tile|
+  
+  filename = "#{tile.z}-#{tile.x}-#{tile.y}.json"
+  path = File.join(options[:output], filename)
+  
+  puts "Writing #{tile} to #{path}..."
+  
+  start = Time.now
+  
+  File.open(path, "w+") do |f|
+    Cover.config.maker.write_tile(tile, f)
+  end
+  
+  @tiles << { "size" => File.size(path), "time" => Time.now - start, "filename" => filename }
+  
+end
+
+Cover.config.teardown if Cover.config.respond_to?(:teardown)
+
+# write gallery
+
+erb = ERB.new(File.read(File.dirname(__FILE__) + "/../templates/gallery.erb"))
+
+File.open(File.join(options[:output], "index.html"), "w+") do |f|
+  f << erb.result(binding)
+end
+
+# copy rendering script
+
+FileUtils.cp(File.dirname(__FILE__) + "/../viewer/public/debug_render.js", File.join(options[:output], "render.js"))
+

@@ -115,19 +115,19 @@ module Cover
           
           queries = []
           
-          columns, conditions = *columns_and_conditions(zoom, :polygon)
+          columns, conditions, group = *columns_and_conditions(zoom, :polygon)
           if columns != ""
             geometry = polygon_geometry_column
             queries << "SELECT #{geometry}, #{columns} FROM planet_osm_polygon WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
           end
           
-          columns, conditions = *columns_and_conditions(zoom, :line)
+          columns, conditions, group = *columns_and_conditions(zoom, :line)
           if columns != ""
             geometry = line_geometry_column
-            queries << "SELECT #{geometry}, #{columns} FROM planet_osm_line WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
+            queries << "SELECT #{geometry}, #{columns} FROM planet_osm_line WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)) GROUP BY #{group}"
           end
           
-          columns, conditions = *columns_and_conditions(zoom, :point)
+          columns, conditions, group = *columns_and_conditions(zoom, :point)
           if columns != ""
             geometry = point_geometry_column
             queries << "SELECT #{geometry}, #{columns} FROM planet_osm_point WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
@@ -157,7 +157,7 @@ END
 ST_AsGeoJSON(
   ST_TransScale(
     ST_Intersection(
-      ST_SimplifyPreserveTopology(way, $5::float / $7::float),
+      ST_SimplifyPreserveTopology(ST_LineMerge(ST_Multi(ST_Collect(way))), $5::float / $7::float),
       ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)
     ),
     -$1::float,
@@ -247,7 +247,13 @@ END
             end
           end.compact).join(" OR ")
           
-          [columns, conditions]
+          # group
+    
+          group = column_conditions.map do |(column, conditions)|
+            @connection.quote_ident(column)
+          end.uniq.join(", ")
+          
+          [columns, conditions, group]
           
         end
       

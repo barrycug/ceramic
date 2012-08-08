@@ -22,7 +22,7 @@ class SelectionBuilder
     @selections += builder.instance_eval { @selections }
   end
   
-  def select(selection = nil, conditions)
+  def select(selection = nil, conditions = {})
     validate_selection(selection)
     context = merge_conditions(@context, conditions)
     

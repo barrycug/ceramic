@@ -39,7 +39,7 @@
         canvas.height = 512;
         
         var article = document.createElement("article");
-        article.innerHTML += "<h1>" + tile.filename + "</h1><dl><dt>Size</dt><dd>" + (tile.size / 1000) + " kB</dd><dt>Time</dt><dd>" + tile.time + " s</dd></dl>";
+        article.innerHTML += "<h1><a href=\"" + tile.filename + "\">" + tile.filename + "</a></h1><dl><dt>Size</dt><dd>" + (tile.size / 1000) + " kB</dd><dt>Time</dt><dd>" + tile.time + " s</dd></dl>";
         article.insertBefore(canvas, article.firstChild);
         
         document.body.appendChild(article);

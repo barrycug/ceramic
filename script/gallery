@@ -77,7 +77,12 @@ tiles.each do |tile|
     Cover.config.maker.write_tile(tile, f)
   end
   
-  @tiles << { "size" => File.size(path), "time" => Time.now - start, "filename" => filename }
+  size = File.size(path)
+  time = Time.now - start
+  
+  puts "#{size / 1000.0} kB, #{time} s"
+  
+  @tiles << { "size" => size, "time" => time, "filename" => filename }
   
 end
 

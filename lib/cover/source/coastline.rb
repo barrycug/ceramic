@@ -28,20 +28,25 @@ SELECT
   ) AS #{@connection.quote_ident(@geometry_column)}
 FROM (
   SELECT
-    ST_TransScale(
-      ST_ForceRHR(
-        ST_Intersection(
-          ST_SimplifyPreserveTopology(
-            ST_Union(ST_Buffer(#{@connection.quote_ident(@geometry_column)}, 0)),
-            $5::float / $7::float
-          ),
-          ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)
-        )
-      ),
-      -$1::float,
-      -$2::float,
-      $7::float / $5::float,
-      -$7::float / $6::float
+    ST_Union(
+      ST_TransScale(
+        ST_ForceRHR(
+          ST_Intersection(
+            ST_Buffer(
+              ST_SimplifyPreserveTopology(
+                #{@connection.quote_ident(@geometry_column)},
+                $5::float / $7::float
+              ),
+              0
+            ),
+            ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)
+          )
+        ),
+        -$1::float,
+        -$2::float,
+        $7::float / $5::float,
+        -$7::float / $6::float
+      )
     ) AS #{@connection.quote_ident(@geometry_column)}
   FROM
     #{@table}

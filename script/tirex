@@ -1,0 +1,82 @@
+#!/usr/bin/ruby
+
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
+
+require "cover"
+require "tirex_backend"
+
+class CoverBackend
+  
+  def setup(map_configs, debug)
+    
+    @debug = debug
+    
+    log_debug("Got setup, map_configs=#{map_configs.inspect}")
+    
+    @configs = map_configs.inject({}) do |hash, (name, map_config)|
+      
+      unless map_config.has_key?("cover_config_path")
+        raise ArgumentError, "Cover configuration file not specified"
+      end
+      
+      unless File.exist?(map_config["cover_config_path"])
+        raise ArgumentError, "Cover configuration file not found: #{map_config["cover_config_path"]}"
+      end
+      
+      Cover.config = nil
+      require File.expand_path(map_config["cover_config_path"])
+      
+      unless Cover.config != nil
+        raise ArgumentError, "Cover configuration file did not assign Cover.config"
+      end
+      
+      unless Cover.config.respond_to?(:maker)
+        raise ArgumentError, "Object assigned to Cover.config does not respond to :maker"
+      end
+      
+      Cover.config.setup if Cover.config.respond_to?(:setup)
+      
+      hash[name] = Cover.config
+      hash
+      
+    end
+    
+    log_debug("Done setup, configs=#{@configs.inspect}")
+    
+  end
+  
+  def teardown
+    
+    log_debug("Got teardown")
+    
+    @configs.each do |name, config|
+      config.teardown if config.respond_to?(:teardown)
+    end
+    
+  end
+  
+  def write(metatile_info, io)
+    
+    log_debug("Request to write metatile: map=#{metatile_info.map} x=#{metatile_info.x} y=#{metatile_info.y} z=#{metatile_info.z}")
+    
+    raise ArgumentError, "Unknown map name" unless @configs.has_key?(metatile_info.map)
+    
+    config = @configs[metatile_info.map]
+    index = Cover::TileIndex::Slippy.new(metatile_info.z, metatile_info.x, metatile_info.y)
+    
+    config.maker.write_metatile(index, io)
+    
+  end
+  
+  protected
+  
+    def log_debug(message)
+      if @debug != nil
+        Syslog.debug(message)
+      end
+    end
+  
+end
+
+TirexBackend.run CoverBackend.new

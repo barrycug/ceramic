@@ -22,7 +22,7 @@ options[:output] = ARGV[0]
 # get tile index
 
 options[:tile] = begin
-  Cover::TileIndex::Slippy.new(options[:tile])
+  Cover::TileIndex.new(options[:tile])
 rescue ArgumentError
   Trollop::die "invalid tile index"
 end

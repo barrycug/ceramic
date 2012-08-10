@@ -145,7 +145,7 @@ module Cover
   
       def fetch_tile(z, x, y)
       
-        index = Cover::TileIndex::Slippy.new(z.to_i, x.to_i, y.to_i)
+        index = Cover::TileIndex.new(z.to_i, x.to_i, y.to_i)
     
         if @tileset
           
@@ -171,7 +171,7 @@ module Cover
         
         if @tileset
           
-          index = Cover::TileIndex::Slippy.new(z.to_i, x.to_i, y.to_i)
+          index = Cover::TileIndex.new(z.to_i, x.to_i, y.to_i)
           @tileset.select_hash(index)
           
         else

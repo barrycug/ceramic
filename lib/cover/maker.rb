@@ -43,7 +43,7 @@ module Cover
       for x in 0...size
         for y in 0...size
           
-          tile_index = TileIndex::Slippy.new(mz, mx + x, my + y)
+          tile_index = TileIndex.new(mz, mx + x, my + y)
           
           # Record the position of this tile
           

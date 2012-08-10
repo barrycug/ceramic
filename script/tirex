@@ -63,7 +63,7 @@ class CoverBackend
     raise ArgumentError, "Unknown map name" unless @configs.has_key?(metatile_info.map)
     
     config = @configs[metatile_info.map]
-    index = Cover::TileIndex::Slippy.new(metatile_info.z, metatile_info.x, metatile_info.y)
+    index = Cover::TileIndex.new(metatile_info.z, metatile_info.x, metatile_info.y)
     
     config.maker.write_metatile(index, io)
     

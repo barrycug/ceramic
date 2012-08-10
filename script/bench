@@ -45,10 +45,10 @@ def process_index_list(list)
     if File.exist?(index)
       File.open(index, "r").each_line do |line|
         next if line =~ /^#/ || line =~ /^\s*$/
-        result << Cover::TileIndex::Slippy.new(line)
+        result << Cover::TileIndex.new(line)
       end
     else
-      result << Cover::TileIndex::Slippy.new(index)
+      result << Cover::TileIndex.new(index)
     end
   
   end

@@ -19,16 +19,10 @@ end
 
 options[:output] = ARGV[0]
 
-# check that the metatile size is a power of 2
-
-if (options[:size] & (options[:size] - 1)) != 0
-  Trollop::die "metatile size must be a power of 2"
-end
-
 # get tile index
 
 options[:tile] = begin
-  Cover::Index.from_string(options[:tile])
+  Cover::TileIndex::Slippy.new(options[:tile])
 rescue ArgumentError
   Trollop::die "invalid tile index"
 end
@@ -47,7 +41,7 @@ end
 Cover.config.setup
 
 File.open(options[:output], "wb+") do |f|
-  Cover.config.maker.write_metatile(options[:tile], options[:size], f, :compress => options[:compress] ? :gzip : false)
+  Cover.config.maker.write_metatile(options[:tile], f)
 end
 
 Cover.config.teardown

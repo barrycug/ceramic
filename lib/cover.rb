@@ -1,5 +1,6 @@
 $LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
 
+require "cover/util"
 require "cover/maker"
 require "cover/tile_index"
 require "cover/selection_builder"

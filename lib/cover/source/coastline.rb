@@ -59,14 +59,14 @@ END
         bounds = tile_index.bounds
         
         params = [
-          bounds[:left],    # 1
-          bounds[:top],     # 2
-          bounds[:right],   # 3
-          bounds[:bottom],  # 4
-          bounds[:width],   # 5
-          bounds[:height],  # 6
-          scale,            # 7
-          @srid             # 8
+          bounds.left,    # 1
+          bounds.top,     # 2
+          bounds.right,   # 3
+          bounds.bottom,  # 4
+          bounds.width,   # 5
+          bounds.height,  # 6
+          scale,          # 7
+          @srid           # 8
         ]
         
         Enumerator.new do |y|

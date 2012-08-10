@@ -1,8 +1,9 @@
-require "global_map_tiles/global_map_tiles"
-
 module Cover
   
   class TileIndex
+    
+    EXTENT = 2 * Math::PI * 6378137
+    ORIGIN = -(EXTENT / 2.0)
     
     Bounds = Struct.new(:left, :top, :right, :bottom, :width, :height)
 
@@ -26,10 +27,12 @@ module Cover
 
     def bounds
       unless instance_variable_defined?(:@bounds)
-        mercator = GlobalMercator.new
-        tile_bounds = mercator.tile_bounds(*mercator.google_tile(x, y, z), z)
-      
-        @bounds = Bounds.new(tile_bounds[0], tile_bounds[3], tile_bounds[2], tile_bounds[1], tile_bounds[2] - tile_bounds[0], tile_bounds[3] - tile_bounds[1])
+        scale = 2 ** z
+        size = EXTENT / scale
+        left = ORIGIN + (x * size)
+        top = ORIGIN + ((scale - y) * size)
+        
+        @bounds = Bounds.new(left, top, left + size, top - size, size, size)
       end
       
       @bounds

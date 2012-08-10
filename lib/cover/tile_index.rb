@@ -25,10 +25,14 @@ module Cover
     end
 
     def bounds
-      mercator = GlobalMercator.new
-      bounds = mercator.tile_bounds(*mercator.google_tile(x, y, z), z)
+      unless instance_variable_defined?(:@bounds)
+        mercator = GlobalMercator.new
+        tile_bounds = mercator.tile_bounds(*mercator.google_tile(x, y, z), z)
       
-      Bounds.new(bounds[0], bounds[3], bounds[2], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1])
+        @bounds = Bounds.new(tile_bounds[0], tile_bounds[3], tile_bounds[2], tile_bounds[1], tile_bounds[2] - tile_bounds[0], tile_bounds[3] - tile_bounds[1])
+      end
+      
+      @bounds
     end
 
   end

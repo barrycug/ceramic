@@ -55,10 +55,10 @@ end
 # do benchmarking
 
 if options[:tiles]
-  puts "%20s  %9s  %9s  %9s" % ["", "Time", "Size", "Deflated"]
-  puts "=" * 53
+  puts "%-20s  %7s  %11s  %11s" % ["", "Time", "Size", "Zipped"]
+  puts "=" * 55
 else
-  puts "%20s  %9s  %9s" % ["", "Time", "Size"]
+  puts "%-20s  %7s  %11s" % ["", "Time", "Size"]
   puts "=" * 42
 end
 
@@ -92,21 +92,21 @@ tile_indices.each do |tile_index|
   total_compressed_size += compressed_size
   
   if options[:tiles]
-    puts "%-20s  % 7.2f s  % 6.1f kB  % 6.1f kB" % [tile_index, time, size.to_f / 1000, compressed_size.to_f / 1000]
+    puts "%-20s  % 5.2f s  % 8.1f kB  % 8.1f kB" % [tile_index, time, size.to_f / 1000, compressed_size.to_f / 1000]
   else
-    puts "%-20s  % 7.2f s  % 6.1f kB" % [tile_index, time, size.to_f / 1000]
+    puts "%-20s  % 5.2f s  % 8.1f kB" % [tile_index, time, size.to_f / 1000]
   end
   
 end
 
 if options[:tiles]
-  puts "-" * 53
-  puts "%-20s  % 7.2f s  % 6.1f kB  % 6.1f kB" % ["Total", total_time, total_size.to_f / 1000, total_compressed_size.to_f / 1000]
-  puts "%-20s  % 7.2f s  % 6.1f kB  % 6.1f kB" % ["Mean", total_time / tile_indices.size, (total_size.to_f / 1000) / tile_indices.size, (total_compressed_size.to_f / 1000) / tile_indices.size]
+  puts "-" * 55
+  puts "%-20s  % 5.2f s  % 8.1f kB  % 8.1f kB" % ["Total", total_time, total_size.to_f / 1000, total_compressed_size.to_f / 1000]
+  puts "%-20s  % 5.2f s  % 8.1f kB  % 8.1f kB" % ["Mean", total_time / tile_indices.size, (total_size.to_f / 1000) / tile_indices.size, (total_compressed_size.to_f / 1000) / tile_indices.size]
 else
   puts "-" * 42
-  puts "%-20s  % 7.2f s  % 6.1f kB" % ["Total", total_time, total_size.to_f / 1000]
-  puts "%-20s  % 7.2f s  % 6.1f kB" % ["Mean", total_time / tile_indices.size, (total_size.to_f / 1000) / tile_indices.size]
+  puts "%-20s  % 5.2f s  % 8.1f kB" % ["Total", total_time, total_size.to_f / 1000]
+  puts "%-20s  % 5.2f s  % 8.1f kB" % ["Mean", total_time / tile_indices.size, (total_size.to_f / 1000) / tile_indices.size]
 end
 
 if Cover.config.respond_to?(:teardown)

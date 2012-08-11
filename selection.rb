@@ -78,7 +78,7 @@ class SelectionConfig
       # waterways, adapted from Toner
       
       query :line do
-        select %w(osm_id waterway name), :zoom => "8-", :sql => "waterway = 'river'"
+        select %w(waterway name), :zoom => "8-", :sql => "waterway = 'river'"
       end
       
       query :polygon do
@@ -141,13 +141,13 @@ class SelectionConfig
       # high zoom
       
       query :point, :polygon do
-        select %w(osm_id amenity shop name), :zoom => "16-", :sql => "amenity IS NOT NULL OR leisure IS NOT NULL or shop IS NOT NULL"
+        select %w(amenity shop name), :zoom => "16-", :sql => "amenity IS NOT NULL OR shop IS NOT NULL"
       end
       
       query :polygon do
         options :sql => "building IS NOT NULL" do
           select %w(building), :zoom => "14", :sql => "way_area > 20000"
-          select %w(osm_id building), :zoom => "15-"
+          select %w(building), :zoom => "15-"
         end
       end
       

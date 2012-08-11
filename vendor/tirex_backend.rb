@@ -183,7 +183,7 @@ class TirexBackend
       metatile_info = MetatileInfo.new(request["map"], request["x"].to_i, request["y"].to_i, request["z"].to_i)
       metatile_path = map_config["tiledir"] + "/" + xyz_to_path(metatile_info.x, metatile_info.y, metatile_info.z) + ".meta"
       
-      # Open a temporary file to write the metatile. When done, copy the temporary
+      # Open a temporary file to write the metatile. When done, move the temporary
       # file to its final path.
       
       tempfile = Tempfile.new("metatile-#{request["map"]}")
@@ -197,7 +197,7 @@ class TirexBackend
         elapsed = Time.now - start
         
         FileUtils.mkdir_p(File.dirname(metatile_path))
-        FileUtils.cp(tempfile.path, metatile_path)
+        FileUtils.mv(tempfile.path, metatile_path)
         FileUtils.chmod(0644, metatile_path)
         
       ensure

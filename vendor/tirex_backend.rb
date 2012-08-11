@@ -198,6 +198,7 @@ class TirexBackend
         
         FileUtils.mkdir_p(File.dirname(metatile_path))
         FileUtils.cp(tempfile.path, metatile_path)
+        FileUtils.chmod(0644, metatile_path)
         
       ensure
         

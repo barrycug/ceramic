@@ -53,8 +53,7 @@ class SelectionConfig
       
       # highways and railways, adapted from High Road
       
-      query :line, :aggregate => "ST_LineMerge(ST_Collect(ST_Simplify(!column!, :scale / :width * 2)))" do
-        
+      query :line, :geometry => "ST_LineMerge(ST_Collect(ST_Simplify(way, :scale / :width * 2)))", :group => true do
         select %w(highway name ref), :zoom => "9-14", :sql => "highway IN ('motorway')"
         select %w(highway name ref), :zoom => "10-14", :sql => "highway IN ('trunk')"
         select %w(highway name ref), :zoom => "11-14", :sql => "highway IN ('primary', 'secondary')"
@@ -67,19 +66,13 @@ class SelectionConfig
         select %w(tunnel bridge), :zoom => "12-14", :sql => "highway IN ('motorway', 'trunk', 'trunk_link', 'primary', 'secondary', 'tertiary')"
         select %w(tunnel bridge), :zoom => "13-14", :sql => "highway IN ('primary_link', 'secondary_link', 'tertiary_link', 'residential', 'unclassified', 'road')"
         select %w(tunnel bridge), :zoom => "14", :sql => "highway IN ('service', 'minor')"
-        
-      end
-      
-      query :point do
-        select %w(highway name), :zoom => "15-", :sql => "highway IS NOT NULL"
-      end
-      
-      query :line, :polygon do
-        select %w(highway tunnel bridge foot bicycle horse tracktype name), :zoom => "15-", :sql => "highway IS NOT NULL"
       end
       
       query :point, :line, :polygon do
-        select %w(railway name), :zoom => "15-", :sql => "railway IS NOT NULL"
+        options :zoom => "15-" do
+          select %w(highway tunnel bridge foot bicycle horse name), :sql => "highway IS NOT NULL"
+          select %w(railway name), :sql => "railway IS NOT NULL"
+        end
       end
       
       # waterways, adapted from Toner
@@ -89,7 +82,6 @@ class SelectionConfig
       end
       
       query :polygon do
-      
         select %w(waterway name), :zoom => "10-", :sql => "waterway in ('riverbank')"
       
         options :sql => "\"natural\" in ('water', 'bay') or landuse in ('reservoir')" do
@@ -102,9 +94,8 @@ class SelectionConfig
           select %w(natural waterway landuse way_area), :zoom => "14", :sql => "way_area >= 5000"
           select %w(natural waterway landuse way_area), :zoom => "15-"
         end
-        
       end
-    
+          
       # places, adapted from osm mapnik styles
       
       query :point do
@@ -115,7 +106,6 @@ class SelectionConfig
         select %w(place name capital population), :zoom => "9-", :sql => "place in ('town')"
         select %w(place name population), :zoom => "9-", :sql => "place in ('large_town', 'small_town')"
         select %w(place name population), :zoom => "12-", :sql => "place in ('suburb', 'village', 'large_village')"
-        
         select %w(natural ele name), :zoom => "12-", :sql => "\"natural\" = 'peak'"
       end
       
@@ -127,11 +117,10 @@ class SelectionConfig
           select %w(boundary admin_level), :zoom => "13-", :sql => "admin_level in ('9', '10')"
         end
       end
-    
+          
       # areas, partially adapted from Toner
       
       query :polygon do
-        
         options :sql => "landuse IS NOT NULL" do
           select %w(landuse), :zoom => "10", :sql => "way_area > 500000"
           select %w(landuse), :zoom => "11", :sql => "way_area > 100000"
@@ -147,9 +136,8 @@ class SelectionConfig
           select %w(amenity natural leisure), :zoom => "13", :sql => "way_area > 10000"
           select %w(amenity natural leisure), :zoom => "14-15"
         end
-      
       end
-    
+      
       # high zoom
       
       query :point, :polygon do

@@ -40,7 +40,7 @@ module Cover
         Selection = Struct.new(:columns, :options)
   
         def initialize(options = {})
-          @options = {}
+          @options = options
           @selections = []
         end
   
@@ -116,7 +116,6 @@ module Cover
       
       def initialize(&block)
         
-        @srid = 900913
         @queries = QueryCollector.collect_queries(&block)
         
       end
@@ -124,15 +123,28 @@ module Cover
       def select_rows(tile_index, scale)
         
         statements = statements_for_zoom(tile_index.z)
-        params = params_for_index_and_scale(tile_index, scale)
+        
+        bounds = tile_index.bounds
+        
+        parameters = {
+          "scale" => [scale.to_f, "float"],
+          "left" => [bounds.left, "float"],
+          "top" => [bounds.top, "float"],
+          "bottom" => [bounds.bottom, "float"],
+          "right" => [bounds.right, "float"],
+          "width" => [bounds.width, "float"],
+          "height" => [bounds.height, "float"],
+          "unit" => [bounds.width / scale.to_f, "float"],
+          "srid" => [900913, "int"]
+        }
         
         Enumerator.new do |y|
           
           statements.each do |statement|
-            connection.exec(statement, params) do |result|
-              result.each do |row|
-                y << row unless row["way"] == "{\"type\":\"GeometryCollection\",\"geometries\":[]}"
-              end
+            arguments = build_arguments(statement, parameters)
+            
+            connection.exec(*arguments) do |result|
+              result.each { |row| y << row }
             end
           end
           
@@ -141,6 +153,19 @@ module Cover
       end
       
       private
+      
+        def build_arguments(statement, parameters)
+          result = statement.dup
+          numbered = []
+  
+          parameters.each do |name, (value, type)|
+            if result.gsub!(":#{name}", "$#{numbered.size + 1}::#{type}")
+              numbered << value
+            end
+          end
+  
+          [result, numbered]
+        end
       
         def statements_for_zoom(zoom)
           
@@ -152,160 +177,113 @@ module Cover
             
             next statements if selections.empty?
             
-            query.tables.each do |table|
-              
-              case table
-              when :point
-                statements << "SELECT osm_id, #{point_geometry_column} FROM planet_osm_point WHERE ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
-              when :line
-                statements << "SELECT osm_id, #{line_geometry_column} FROM planet_osm_line WHERE ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
-              when :polygon
-                statements << "SELECT osm_id, #{polygon_geometry_column} FROM planet_osm_polygon WHERE ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
-              end
-              
+            statements + query.tables.map do |table|
+              build_statement(table, query.options, selections)
             end
-            
-            statements
             
           end
 
         end
         
-        def point_geometry_column
+        def build_statement(table, options, selections)
+          
+          subquery = build_subquery(table, options, selections)
+          
+          columns = selections.inject([]) { |c, s| c | s.columns }.map { |c| @connection.quote_ident(c) }
+          
+          select_list = (["ST_AsGeoJSON(way, 0) AS way"] + columns).join(", ")
+          
+          "SELECT #{select_list} FROM (#{subquery}) q WHERE NOT ST_IsEmpty(way)"
+          
+        end
+        
+        def build_subquery(table, options, selections)
+          
+          columns = selections.inject([]) { |c, s| c | s.columns }.map { |c| @connection.quote_ident(c) }
+          
+          geometry_expression = options[:geometry] || "way"
+          
+          geometry_item = (case table
+            when :point
+              wrap_point_geometry(geometry_expression)
+            when :line
+              wrap_line_geometry(geometry_expression)
+            when :polygon
+              wrap_polygon_geometry(geometry_expression)
+          end) + " AS way"
+          
+          select_list = ([geometry_item] + columns).join(", ")
+          
+          table_name = case table
+            when :point
+              "planet_osm_point"
+            when :line
+              "planet_osm_line"
+            when :polygon
+              "planet_osm_polygon"
+          end
+          
+          intersection_condition = "way && ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)"
+          
+          column_conditions = (["FALSE"] + selections.map do |selection|
+            "(" + (["TRUE"] + selection.options[:sql]).join(" AND ") + ")"
+          end).join(" OR ")
+          
+          group = if options[:group]
+            "GROUP BY " + columns.join(", ")
+          else
+            ""
+          end
+          
+          "SELECT #{select_list} " +
+          "FROM #{table_name} " +
+          "WHERE (#{intersection_condition}) AND (#{column_conditions}) " +
+          "#{group}"
+          
+        end
+        
+        def wrap_point_geometry(column)
           <<-END
-ST_AsGeoJSON(
-  ST_TransScale(
-    way,
-    -$1::float,
-    -$2::float,
-    $7::float / $5::float,
-    -$7::float / $6::float
-  ),
-  0
-) AS way
+ST_TransScale(
+  #{column},
+  -:left,
+  -:top,
+  :scale / :width,
+  -:scale / :height
+)
 END
         end
         
-        def line_geometry_column
+        def wrap_line_geometry(column)
           <<-END
-ST_AsGeoJSON(
-  ST_TransScale(
+ST_TransScale(
+  ST_Intersection(
+    #{column},
+    ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)
+  ),
+  -:left,
+  -:top,
+  :scale / :width,
+  -:scale / :height
+)
+END
+        end
+        
+        def wrap_polygon_geometry(column)
+          <<-END
+ST_TransScale(
+  ST_ForceRHR(
     ST_Intersection(
-      ST_SimplifyPreserveTopology(way, $5::float / $7::float),
-      ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)
-    ),
-    -$1::float,
-    -$2::float,
-    $7::float / $5::float,
-    -$7::float / $6::float
+      ST_Buffer(#{column}, 0),
+      ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)
+    )
   ),
-  0
-) AS way
+  -:left,
+  -:top,
+  :scale / :width,
+  -:scale / :height
+)
 END
-        end
-        
-        def polygon_geometry_column
-          <<-END
-ST_AsGeoJSON(
-  ST_TransScale(
-    ST_ForceRHR(
-      ST_Intersection(
-        ST_Buffer(ST_SimplifyPreserveTopology(way, $5::float / $7::float), 0),
-        ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)
-      )
-    ),
-    -$1::float,
-    -$2::float,
-    $7::float / $5::float,
-    -$7::float / $6::float
-  ),
-  0
-) AS way,
-ST_AsGeoJSON(
-  ST_TransScale(
-    ST_PointOnSurface(ST_Buffer(way, 0)),
-    -$1::float,
-    -$2::float,
-    $7::float / $5::float,
-    -$7::float / $6::float
-  ),
-  0
-) AS point
-END
-        end
-        
-        def columns_and_conditions(zoom, table)
-          
-          # find all selections for the table
-          
-          table_selections = @selections.select do |s|
-            !s.context.has_key?(:table) || s.context[:table].include?(table)
-          end
-          
-          # if one of the selections includes this zoom level, add its sql
-          # to the column_conditions for each of the column selections
-          # it declares.
-          
-          column_conditions = Hash.new { |hash, key| hash[key] = [] }
-          
-          table_selections.each do |s|
-            if !s.context.has_key?(:zoom) || s.context[:zoom].include?(zoom)
-              s.selection.each do |column|
-                if s.context.has_key?(:sql)
-                  column_conditions[column] << s.context[:sql].map { |s| "(#{s})" }.join(" AND ")
-                else
-                  column_conditions[column] << "TRUE"
-                end
-              end
-            end
-          end
-          
-          # prepare cases for each column
-    
-          columns = column_conditions.map do |(column, conditions)|
-            condition = conditions.map { |c| "(#{c})" }.join(" OR ")
-            "CASE WHEN #{condition} THEN #{@connection.quote_ident(column)} ELSE NULL END AS #{@connection.quote_ident(column)}"
-          end.join(", ")
-          
-          # prepare conditions
-    
-          conditions = (["FALSE"] + table_selections.map do |s|
-            if !s.context.has_key?(:zoom) || s.context[:zoom].include?(zoom)
-              if s.context.has_key?(:sql)
-                "(#{s.context[:sql].map { |s| "(#{s})" }.join(" AND ")})"
-              else
-                "TRUE"
-              end
-            else
-              nil
-            end
-          end.compact).join(" OR ")
-          
-          # group
-    
-          group = column_conditions.map do |(column, conditions)|
-            @connection.quote_ident(column)
-          end.uniq.join(", ")
-          
-          [columns, conditions, group]
-          
-        end
-      
-        def params_for_index_and_scale(tile_index, scale)
-          
-          bounds = tile_index.bounds
-          
-          [
-            bounds.left,    # 1
-            bounds.top,     # 2
-            bounds.right,   # 3
-            bounds.bottom,  # 4
-            bounds.width,   # 5
-            bounds.height,  # 6
-            scale,          # 7
-            @srid           # 8
-          ]
-          
         end
       
     end

@@ -2,6 +2,7 @@ require "syslog"
 require "socket"
 require "fileutils"
 require "timeout"
+require "tempfile"
 
 class TirexBackend
   
@@ -182,12 +183,27 @@ class TirexBackend
       metatile_info = MetatileInfo.new(request["map"], request["x"].to_i, request["y"].to_i, request["z"].to_i)
       metatile_path = map_config["tiledir"] + "/" + xyz_to_path(metatile_info.x, metatile_info.y, metatile_info.z) + ".meta"
       
-      FileUtils.mkdir_p(File.dirname(metatile_path))
+      # Open a temporary file to write the metatile. When done, copy the temporary
+      # file to its final path.
       
-      start = Time.now
+      tempfile = Tempfile.new("metatile-#{request["map"]}")
       
-      File.open(metatile_path, "w+") do |f|
-        @handler.write(metatile_info, f)
+      begin
+        
+        start = Time.now
+        
+        @handler.write(metatile_info, tempfile)
+        
+        elapsed = Time.now - start
+        
+        FileUtils.mkdir_p(File.dirname(metatile_path))
+        FileUtils.cp(tempfile.path, metatile_path)
+        
+      ensure
+        
+        tempfile.close
+        tempfile.unlink
+        
       end
       
       log_debug("Metatile written to: #{metatile_path}")
@@ -196,7 +212,7 @@ class TirexBackend
         "type" => "metatile_render_request",
         "result" => "ok",
         "id" => request["id"],
-        "render_time" => ((Time.now - start) * 1000).to_i.to_s
+        "render_time" => (elapsed * 1000).to_i.to_s
       }
       
     end

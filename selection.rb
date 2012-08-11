@@ -53,7 +53,7 @@ class SelectionConfig
       
       # highways and railways, adapted from High Road
       
-      query :table => :line, :aggregate => "ST_LineMerge(ST_Collect(ST_Simplify(!column!, :scale / :width * 2)))" do
+      query :line, :aggregate => "ST_LineMerge(ST_Collect(ST_Simplify(!column!, :scale / :width * 2)))" do
         
         select %w(highway name ref), :zoom => "9-14", :sql => "highway IN ('motorway')"
         select %w(highway name ref), :zoom => "10-14", :sql => "highway IN ('trunk')"
@@ -70,25 +70,25 @@ class SelectionConfig
         
       end
       
-      query :table => :point do
+      query :point do
         select %w(highway name), :zoom => "15-", :sql => "highway IS NOT NULL"
       end
       
-      query :table => [:line, :polygon] do
+      query :line, :polygon do
         select %w(highway tunnel bridge foot bicycle horse tracktype name), :zoom => "15-", :sql => "highway IS NOT NULL"
       end
       
-      query :table => [:point, :line, :polygon] do
+      query :point, :line, :polygon do
         select %w(railway name), :zoom => "15-", :sql => "railway IS NOT NULL"
       end
       
       # waterways, adapted from Toner
       
-      query :table => :line do
+      query :line do
         select %w(osm_id waterway name), :zoom => "8-", :sql => "waterway = 'river'"
       end
       
-      query :table => :polygon do
+      query :polygon do
       
         select %w(waterway name), :zoom => "10-", :sql => "waterway in ('riverbank')"
       
@@ -107,7 +107,7 @@ class SelectionConfig
     
       # places, adapted from osm mapnik styles
       
-      query :table => :point do
+      query :point do
         select %w(place name), :sql => "place in ('continent', 'ocean', 'sea')"
         select %w(place name), :zoom => "2-", :sql => "place in ('country')"
         select %w(place name), :zoom => "4-", :sql => "place in ('state')"
@@ -119,16 +119,18 @@ class SelectionConfig
         select %w(natural ele name), :zoom => "12-", :sql => "\"natural\" = 'peak'"
       end
       
-      query :table => :line, :sql => "boundary = 'administrative'" do
-        select %w(boundary admin_level), :zoom => "4-", :sql => "admin_level in ('2', '3', '4')"
-        select %w(boundary admin_level), :zoom => "11-", :sql => "admin_level in ('5', '6')"
-        select %w(boundary admin_level), :zoom => "12-", :sql => "admin_level in ('7', '8')"
-        select %w(boundary admin_level), :zoom => "13-", :sql => "admin_level in ('9', '10')"
+      query :line do
+        options :sql => "boundary = 'administrative'" do
+          select %w(boundary admin_level), :zoom => "4-", :sql => "admin_level in ('2', '3', '4')"
+          select %w(boundary admin_level), :zoom => "11-", :sql => "admin_level in ('5', '6')"
+          select %w(boundary admin_level), :zoom => "12-", :sql => "admin_level in ('7', '8')"
+          select %w(boundary admin_level), :zoom => "13-", :sql => "admin_level in ('9', '10')"
+        end
       end
     
       # areas, partially adapted from Toner
       
-      query :table => :polygon do
+      query :polygon do
         
         options :sql => "landuse IS NOT NULL" do
           select %w(landuse), :zoom => "10", :sql => "way_area > 500000"
@@ -150,11 +152,11 @@ class SelectionConfig
     
       # high zoom
       
-      query :table => [:point, :polygon] do
+      query :point, :polygon do
         select %w(osm_id amenity shop name), :zoom => "16-", :sql => "amenity IS NOT NULL OR leisure IS NOT NULL or shop IS NOT NULL"
       end
       
-      query :table => :polygon do
+      query :polygon do
         options :sql => "building IS NOT NULL" do
           select %w(building), :zoom => "14", :sql => "way_area > 20000"
           select %w(osm_id building), :zoom => "15-"

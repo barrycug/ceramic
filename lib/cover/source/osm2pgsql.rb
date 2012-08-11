@@ -5,62 +5,111 @@ module Cover
     
     class OSM2PGSQL
       
-      class SelectionBuilder < ::SelectionBuilder
-        
+      class QueryCollector
+  
+        Query = Struct.new(:tables, :options, :selections)
+  
+        def self.collect_queries(&block)
+          collector = self.new
+          collector.instance_exec(&block)
+          collector.instance_variable_get(:@queries)
+        end
+  
+        def initialize
+          @queries = []
+        end
+  
+        def query(*tables, &block)
+          options = Hash === tables.last ? tables.pop : {}
+          validate_query(tables, options)
+    
+          collector = SelectionCollector.new
+          collector.instance_exec(&block)
+          @queries << Query.new(tables, options, collector.instance_variable_get(:@selections))
+        end
+
         protected
-        
-          def validate_selection(selection)
-            unless Array === selection
-              raise ArgumentError, "selection must be an array"
+
+          def validate_query(table, options)
+          end
+  
+      end
+
+      class SelectionCollector
+  
+        Selection = Struct.new(:columns, :options)
+  
+        def initialize(options = {})
+          @options = {}
+          @selections = []
+        end
+  
+        def options(options = {}, &block)
+          collector = SelectionCollector.new(merge_options(@options, options))
+          collector.instance_exec(&block)
+          @selections += collector.instance_variable_get(:@selections)
+        end
+  
+        def select(columns = nil, options = {})
+          validate_columns(columns)
+          @selections << Selection.new(columns, merge_options(@options, options))
+        end
+  
+        protected
+  
+          def validate_columns(columns)
+            unless Array === columns
+              raise ArgumentError, "columns must be an array"
             end
           end
-        
-          def merge_condition(key, outer, inner)
+    
+          def merge_options(outer, inner)
+            result = {}
+            outer.each do |key, value|
+              result[key] = value unless inner.has_key?(key)
+            end
+            inner.each do |key, value|
+              result[key] = merge_option(key, outer[key], value)
+            end
+            result
+          end
+    
+          def merge_option(key, outer, inner)
             case key
             when :zoom
               merge_zoom(outer, inner)
-            when :table
-              merge_table(outer, inner)
             when :sql
-              super(key, outer, inner)
+              merge_sql(outer, inner)
             else
-              raise ArgumentError, "unknown condition key: #{key}"
+              raise ArgumentError, "unknown option #{key}"
             end
           end
-          
-          def merge_table(outer, inner)
-            inner = Array === inner ? inner : [inner]
-            
-            if outer.nil?
-              inner
-            else
-              merged = outer & inner
-              
-              if merged.empty?
-                raise ArgumentError, "table set intersections must not be empty"
-              end
-              
-              merged
-            end
-          end
-          
+    
           def merge_zoom(outer, inner)
             inner = Cover::Util.parse_zoom(inner)
-            
+      
             if outer.nil?
               inner
             else
               if inner.end < outer.begin || inner.begin > outer.end
                 raise ArgumentError, "zoom ranges must overlap"
               end
-              
+        
               Range.new(
                 inner.begin > outer.begin ? inner.begin : outer.begin,
                 inner.end < outer.end ? inner.end : outer.end
               )
             end
           end
-        
+    
+          def merge_sql(outer, inner)
+            if outer.nil?
+              [inner]
+            else
+              outer + [inner]
+            end
+          end
+  
       end
       
       attr_accessor :connection
@@ -68,19 +117,19 @@ module Cover
       def initialize(&block)
         
         @srid = 900913
-        @selections = SelectionBuilder.collect_selections(&block)
+        @queries = QueryCollector.collect_queries(&block)
         
       end
       
       def select_rows(tile_index, scale)
         
-        queries = queries_for_zoom(tile_index.z)
+        statements = statements_for_zoom(tile_index.z)
         params = params_for_index_and_scale(tile_index, scale)
         
         Enumerator.new do |y|
           
-          queries.each do |query|
-            connection.exec(query, params) do |result|
+          statements.each do |statement|
+            connection.exec(statement, params) do |result|
               result.each do |row|
                 y << row unless row["way"] == "{\"type\":\"GeometryCollection\",\"geometries\":[]}"
               end
@@ -93,29 +142,32 @@ module Cover
       
       private
       
-        def queries_for_zoom(zoom)
+        def statements_for_zoom(zoom)
           
-          queries = []
-          
-          columns, conditions, group = *columns_and_conditions(zoom, :polygon)
-          if columns != ""
-            geometry = polygon_geometry_column
-            queries << "SELECT #{geometry}, #{columns} FROM planet_osm_polygon WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
+          @queries.inject([]) do |statements, query|
+            
+            selections = query.selections.select do |selection|
+              selection.options[:zoom] == nil || selection.options[:zoom].include?(zoom)
+            end
+            
+            next statements if selections.empty?
+            
+            query.tables.each do |table|
+              
+              case table
+              when :point
+                statements << "SELECT osm_id, #{point_geometry_column} FROM planet_osm_point WHERE ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
+              when :line
+                statements << "SELECT osm_id, #{line_geometry_column} FROM planet_osm_line WHERE ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
+              when :polygon
+                statements << "SELECT osm_id, #{polygon_geometry_column} FROM planet_osm_polygon WHERE ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
+              end
+              
+            end
+            
+            statements
+            
           end
-          
-          columns, conditions, group = *columns_and_conditions(zoom, :line)
-          if columns != ""
-            geometry = line_geometry_column
-            queries << "SELECT #{geometry}, #{columns} FROM planet_osm_line WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)) GROUP BY #{group}"
-          end
-          
-          columns, conditions, group = *columns_and_conditions(zoom, :point)
-          if columns != ""
-            geometry = point_geometry_column
-            queries << "SELECT #{geometry}, #{columns} FROM planet_osm_point WHERE (#{conditions}) AND ST_Intersects(way, ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int))"
-          end
-          
-          queries
 
         end
         
@@ -139,7 +191,7 @@ END
 ST_AsGeoJSON(
   ST_TransScale(
     ST_Intersection(
-      ST_SimplifyPreserveTopology(ST_LineMerge(ST_Multi(ST_Collect(way))), $5::float / $7::float),
+      ST_SimplifyPreserveTopology(way, $5::float / $7::float),
       ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)
     ),
     -$1::float,

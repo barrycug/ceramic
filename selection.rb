@@ -49,11 +49,11 @@ class SelectionConfig
     
     @coastline_source = Cover::Source::Coastline.new("coastlines", :zoom => "10-", :geometry => "geom")
     
-    # highways and railways, adapted from High Road
-    
-    @highway_source = Cover::Source::OSM2PGSQL.new do
+    @osm_source = Cover::Source::OSM2PGSQL.new do
       
-      conditions :table => :line do
+      # highways and railways, adapted from High Road
+      
+      query :table => :line, :aggregate => "ST_LineMerge(ST_Collect(ST_Simplify(!column!, :scale / :width * 2)))" do
         
         select %w(highway name ref), :zoom => "9-14", :sql => "highway IN ('motorway')"
         select %w(highway name ref), :zoom => "10-14", :sql => "highway IN ('trunk')"
@@ -69,39 +69,45 @@ class SelectionConfig
         select %w(tunnel bridge), :zoom => "14", :sql => "highway IN ('service', 'minor')"
         
       end
-        
-      select %w(osm_id highway name), :table => :point, :zoom => "15-", :sql => "highway IS NOT NULL"
-      select %w(osm_id highway tunnel bridge foot bicycle horse tracktype name), :table => [:line, :polygon], :zoom => "15-", :sql => "highway IS NOT NULL"
-      select %w(osm_id railway name), :table => [:point, :line, :polygon], :zoom => "15-", :sql => "railway IS NOT NULL"
       
-    end
-    
-    # waterways, adapted from Toner
-    
-    @waterway_source = Cover::Source::OSM2PGSQL.new do
-      
-      select %w(osm_id waterway name), :table => :line, :zoom => "8-", :sql => "waterway = 'river'"
-      
-      select %w(waterway name), :table => :polygon, :zoom => "10-", :sql => "waterway in ('riverbank')"
-      
-      conditions :table => :polygon, :sql => "\"natural\" in ('water', 'bay') or landuse in ('reservoir')" do
-        select %w(natural waterway landuse way_area), :zoom => "8", :sql => "way_area >=  5000000"
-        select %w(natural waterway landuse way_area), :zoom => "9", :sql => "way_area >=  1000000"
-        select %w(natural waterway landuse way_area), :zoom => "10", :sql => "way_area >= 500000"
-        select %w(natural waterway landuse way_area), :zoom => "11", :sql => "way_area >= 100000"
-        select %w(natural waterway landuse way_area), :zoom => "12", :sql => "way_area >= 500000"
-        select %w(natural waterway landuse way_area), :zoom => "13", :sql => "way_area >= 10000"
-        select %w(natural waterway landuse way_area), :zoom => "14", :sql => "way_area >= 5000"
-        select %w(natural waterway landuse way_area), :zoom => "15-"
+      query :table => :point do
+        select %w(highway name), :zoom => "15-", :sql => "highway IS NOT NULL"
       end
       
-    end
-    
-    # places, adapted from osm mapnik styles
-    
-    @places_source = Cover::Source::OSM2PGSQL.new do
+      query :table => [:line, :polygon] do
+        select %w(highway tunnel bridge foot bicycle horse tracktype name), :zoom => "15-", :sql => "highway IS NOT NULL"
+      end
       
-      conditions :table => :point do
+      query :table => [:point, :line, :polygon] do
+        select %w(railway name), :zoom => "15-", :sql => "railway IS NOT NULL"
+      end
+      
+      # waterways, adapted from Toner
+      
+      query :table => :line do
+        select %w(osm_id waterway name), :zoom => "8-", :sql => "waterway = 'river'"
+      end
+      
+      query :table => :polygon do
+      
+        select %w(waterway name), :zoom => "10-", :sql => "waterway in ('riverbank')"
+      
+        options :sql => "\"natural\" in ('water', 'bay') or landuse in ('reservoir')" do
+          select %w(natural waterway landuse way_area), :zoom => "8", :sql => "way_area >=  5000000"
+          select %w(natural waterway landuse way_area), :zoom => "9", :sql => "way_area >=  1000000"
+          select %w(natural waterway landuse way_area), :zoom => "10", :sql => "way_area >= 500000"
+          select %w(natural waterway landuse way_area), :zoom => "11", :sql => "way_area >= 100000"
+          select %w(natural waterway landuse way_area), :zoom => "12", :sql => "way_area >= 500000"
+          select %w(natural waterway landuse way_area), :zoom => "13", :sql => "way_area >= 10000"
+          select %w(natural waterway landuse way_area), :zoom => "14", :sql => "way_area >= 5000"
+          select %w(natural waterway landuse way_area), :zoom => "15-"
+        end
+        
+      end
+    
+      # places, adapted from osm mapnik styles
+      
+      query :table => :point do
         select %w(place name), :sql => "place in ('continent', 'ocean', 'sea')"
         select %w(place name), :zoom => "2-", :sql => "place in ('country')"
         select %w(place name), :zoom => "4-", :sql => "place in ('state')"
@@ -109,50 +115,50 @@ class SelectionConfig
         select %w(place name capital population), :zoom => "9-", :sql => "place in ('town')"
         select %w(place name population), :zoom => "9-", :sql => "place in ('large_town', 'small_town')"
         select %w(place name population), :zoom => "12-", :sql => "place in ('suburb', 'village', 'large_village')"
+        
+        select %w(natural ele name), :zoom => "12-", :sql => "\"natural\" = 'peak'"
       end
       
-      conditions :table => :line, :sql => "boundary = 'administrative'" do
+      query :table => :line, :sql => "boundary = 'administrative'" do
         select %w(boundary admin_level), :zoom => "4-", :sql => "admin_level in ('2', '3', '4')"
         select %w(boundary admin_level), :zoom => "11-", :sql => "admin_level in ('5', '6')"
         select %w(boundary admin_level), :zoom => "12-", :sql => "admin_level in ('7', '8')"
         select %w(boundary admin_level), :zoom => "13-", :sql => "admin_level in ('9', '10')"
       end
+    
+      # areas, partially adapted from Toner
       
-      select %w(natural ele name), :table => :point, :zoom => "12-", :sql => "\"natural\" = 'peak'"
-    
-    end
-    
-    # areas, partially adapted from Toner
-    
-    @areas_source = Cover::Source::OSM2PGSQL.new do
+      query :table => :polygon do
+        
+        options :sql => "landuse IS NOT NULL" do
+          select %w(landuse), :zoom => "10", :sql => "way_area > 500000"
+          select %w(landuse), :zoom => "11", :sql => "way_area > 100000"
+          select %w(landuse), :zoom => "12", :sql => "way_area > 50000"
+          select %w(landuse), :zoom => "13", :sql => "way_area > 10000"
+          select %w(landuse), :zoom => "14-"
+        end
       
-      conditions :table => :polygon, :sql => "landuse IS NOT NULL" do
-        select %w(landuse), :zoom => "10", :sql => "way_area > 500000"
-        select %w(landuse), :zoom => "11", :sql => "way_area > 100000"
-        select %w(landuse), :zoom => "12", :sql => "way_area > 50000"
-        select %w(landuse), :zoom => "13", :sql => "way_area > 10000"
-        select %w(landuse), :zoom => "14-"
+        options :sql => "amenity IS NOT NULL OR \"natural\" IS NOT NULL OR leisure IS NOT NULL" do
+          select %w(amenity natural leisure), :zoom => "10", :sql => "way_area > 500000"
+          select %w(amenity natural leisure), :zoom => "11", :sql => "way_area > 100000"
+          select %w(amenity natural leisure), :zoom => "12", :sql => "way_area > 50000"
+          select %w(amenity natural leisure), :zoom => "13", :sql => "way_area > 10000"
+          select %w(amenity natural leisure), :zoom => "14-15"
+        end
+      
+      end
+    
+      # high zoom
+      
+      query :table => [:point, :polygon] do
+        select %w(osm_id amenity shop name), :zoom => "16-", :sql => "amenity IS NOT NULL OR leisure IS NOT NULL or shop IS NOT NULL"
       end
       
-      conditions :table => :polygon, :sql => "amenity IS NOT NULL OR \"natural\" IS NOT NULL OR leisure IS NOT NULL" do
-        select %w(amenity natural leisure), :zoom => "10", :sql => "way_area > 500000"
-        select %w(amenity natural leisure), :zoom => "11", :sql => "way_area > 100000"
-        select %w(amenity natural leisure), :zoom => "12", :sql => "way_area > 50000"
-        select %w(amenity natural leisure), :zoom => "13", :sql => "way_area > 10000"
-        select %w(amenity natural leisure), :zoom => "14-15"
-      end
-      
-    end
-    
-    # high zoom
-    
-    @high_zoom_source = Cover::Source::OSM2PGSQL.new do
-      
-      select %w(osm_id amenity shop name), :table => [:point, :polygon], :zoom => "16-", :sql => "amenity IS NOT NULL OR leisure IS NOT NULL or shop IS NOT NULL"
-      
-      conditions :table => :polygon, :sql => "building IS NOT NULL" do
-        select %w(building), :zoom => "14", :sql => "way_area > 20000"
-        select %w(osm_id building), :zoom => "15-"
+      query :table => :polygon do
+        options :sql => "building IS NOT NULL" do
+          select %w(building), :zoom => "14", :sql => "way_area > 20000"
+          select %w(osm_id building), :zoom => "15-"
+        end
       end
       
     end
@@ -163,12 +169,9 @@ class SelectionConfig
     
     pairs = []
     
+    pairs << [@lz_coastline_source, @coastline_writer]
     pairs << [@coastline_source, @coastline_writer]
-    pairs << [@highway_source, @osm_writer]
-    pairs << [@waterway_source, @osm_writer]
-    pairs << [@places_source, @osm_writer]
-    pairs << [@areas_source, @osm_writer]
-    pairs << [@high_zoom_source, @osm_writer]
+    pairs << [@osm_source, @osm_writer]
     
     @maker = Cover::Maker.new(:scale => 1024, :pairs => pairs)
     
@@ -179,11 +182,7 @@ class SelectionConfig
     
     @lz_coastline_source.connection = @connection
     @coastline_source.connection = @connection
-    @highway_source.connection = @connection
-    @waterway_source.connection = @connection
-    @places_source.connection = @connection
-    @areas_source.connection = @connection
-    @high_zoom_source.connection = @connection
+    @osm_source.connection = @connection
   end
   
   def teardown

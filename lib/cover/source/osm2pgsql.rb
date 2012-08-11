@@ -212,7 +212,20 @@ module Cover
               wrap_polygon_geometry(geometry_expression)
           end) + " AS way"
           
-          select_list = ([geometry_item] + columns).join(", ")
+          column_conditions = Hash.new { |hash, key| hash[key] = [] }
+          
+          selections.each do |selection|
+            selection.columns.each do |column|
+              column_conditions[column] << selection.options[:sql].join(" AND ")
+            end
+          end
+          
+          conditional_columns = column_conditions.map do |(column, conditions)|
+            condition = conditions.map { |c| "(#{c})" }.join(" OR ")
+            "CASE WHEN #{condition} THEN #{@connection.quote_ident(column)} ELSE NULL END AS #{@connection.quote_ident(column)}"
+          end
+          
+          select_list = ([geometry_item] + conditional_columns).join(", ")
           
           table_name = case table
             when :point
@@ -223,9 +236,9 @@ module Cover
               "planet_osm_polygon"
           end
           
-          intersection_condition = "way && ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)"
+          intersection = "way && ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)"
           
-          column_conditions = (["FALSE"] + selections.map do |selection|
+          conditions = (["FALSE"] + selections.map do |selection|
             "(" + (["TRUE"] + selection.options[:sql]).join(" AND ") + ")"
           end).join(" OR ")
           
@@ -237,7 +250,7 @@ module Cover
           
           "SELECT #{select_list} " +
           "FROM #{table_name} " +
-          "WHERE (#{intersection_condition}) AND (#{column_conditions}) " +
+          "WHERE (#{intersection}) AND (#{conditions}) " +
           "#{group}"
           
         end

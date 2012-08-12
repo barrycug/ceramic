@@ -203,6 +203,12 @@ module Cover
           
           geometry_expression = options[:geometry] || "way"
           
+          if Integer === options[:simplify]
+            geometry_expression = "ST_SimplifyPreserveTopology(#{geometry_expression}, (:scale / :width) * #{options[:simplify]})"
+          elsif options[:simplify] != false
+            geometry_expression = "ST_SimplifyPreserveTopology(#{geometry_expression}, :scale / :width)"
+          end
+          
           geometry_item = (case table
             when :point
               wrap_point_geometry(geometry_expression)

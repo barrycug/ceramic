@@ -203,7 +203,7 @@ module Cover
           
           geometry_expression = options[:geometry] || "way"
           
-          if Integer === options[:simplify]
+          if Numeric === options[:simplify]
             geometry_expression = "ST_SimplifyPreserveTopology(#{geometry_expression}, (:scale / :width) * #{options[:simplify]})"
           elsif options[:simplify] != false
             geometry_expression = "ST_SimplifyPreserveTopology(#{geometry_expression}, :scale / :width)"

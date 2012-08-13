@@ -14,10 +14,6 @@ module Cover
     
       super()
       
-      if options[:zoom]
-        @zoom = options[:zoom]
-      end
-      
       if options[:tileset]
         @tileset = options[:tileset]
         @format = @tileset.select_metadata["format"]
@@ -37,10 +33,6 @@ module Cover
     end
   
     get "/:z/:x/:y" do
-      
-      if @zoom && !@zoom.include?(params[:z].to_i)
-        halt 404
-      end
       
       hash = get_hash(params[:z], params[:x], params[:y])
       
@@ -75,10 +67,6 @@ module Cover
     end
     
     get "/:z/:x/:y/inspect" do
-      
-      if @zoom && !@zoom.include?(params[:z].to_i)
-        halt 404
-      end
       
       start = Time.now
       @tile = fetch_tile(params[:z], params[:x], params[:y])
@@ -120,25 +108,6 @@ module Cover
       erb :inspect
       
     end
-    
-    # get "/:z/:x/:y/metatile" do
-    #   
-    #   if @zoom && !@zoom.include?(params[:z].to_i)
-    #     halt 404
-    #   end
-    #   
-    #   if @tileset
-    #     halt 404
-    #   end
-    #   
-    #   params[:size] ||= "4"
-    #   
-    #   index = Cover::Index.new(params[:z].to_i, params[:x].to_i, params[:y].to_i)
-    #   @tiles = @maker.render_metatile(index, params[:size].to_i)
-    # 
-    #   erb :metatile
-    #   
-    # end
   
     protected
   

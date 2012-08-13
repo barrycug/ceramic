@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+require "rubygems"
+require "rack"
+
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
+require "trollop"
+require "cover"
+
+options = Trollop::options do
+  opt :center, "Initial map center as lat,lon,zoom, for example: 37.7392,-122.3011,9", :type => :string
+  opt :port, "Port", :type => :integer, :default => 3857
+  opt :host, "Host", :type => :string, :default => "0.0.0.0"
+end
+
+if ARGV.size == 0
+  Trollop::die "must specify either a config file"
+end
+ 
+require File.expand_path(options[:config])
+
+if !Cover.config.respond_to?(:maker)
+  puts "Config file must assign to Cover.config an object which responds to #maker"
+  exit
+end
+
+Cover.config.setup if Cover.config.respond_to?(:setup)
+
+Rack::Server.start(
+  :app => Cover::Viewer.new(options.merge(maker: Cover.config.maker)),
+  :Host => options[:host],
+  :Port => options[:port]
+)

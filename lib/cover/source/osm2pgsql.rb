@@ -114,7 +114,11 @@ module Cover
       
       attr_accessor :connection
       
-      def initialize(&block)
+      def initialize(options = {}, &block)
+        
+        @table_prefix = options[:prefix] || "planet_osm"
+        @geometry_column = options[:geometry_column] || "way"
+        @geometry_srid = options[:geometry_srid] || 900913
         
         @queries = QueryCollector.collect_queries(&block)
         
@@ -135,7 +139,7 @@ module Cover
           "width" => [bounds.width, "float"],
           "height" => [bounds.height, "float"],
           "unit" => [bounds.width / scale.to_f, "float"],
-          "srid" => [900913, "int"]
+          "srid" => [@geometry_srid, "int"]
         }
         
         Enumerator.new do |y|
@@ -191,15 +195,15 @@ module Cover
           
           columns = selections.inject([]) { |c, s| c | s.columns }.map { |c| selection_column_name(c) }
           
-          select_list = (["ST_AsGeoJSON(way, 0) AS way"] + columns).join(", ")
+          select_list = (["ST_AsGeoJSON(#{@connection.quote_ident(@geometry_column)}, 0) AS #{@connection.quote_ident(@geometry_column)}"] + columns).join(", ")
           
-          "SELECT #{select_list} FROM (#{subquery}) q WHERE NOT ST_IsEmpty(way)"
+          "SELECT #{select_list} FROM (#{subquery}) q WHERE NOT ST_IsEmpty(#{@connection.quote_ident(@geometry_column)})"
           
         end
         
         def build_subquery(table, options, selections)
           
-          geometry_expression = options[:geometry] || "way"
+          geometry_expression = options[:geometry] || @connection.quote_ident(@geometry_column)
           
           if Numeric === options[:simplify]
             geometry_expression = "ST_SimplifyPreserveTopology(#{geometry_expression}, :unit * #{options[:simplify]})"
@@ -214,7 +218,7 @@ module Cover
               wrap_line_geometry(geometry_expression)
             when :polygon
               wrap_polygon_geometry(geometry_expression)
-          end) + " AS way"
+          end) + " AS #{@connection.quote_ident(@geometry_column)}"
           
           column_conditions = Hash.new { |hash, key| hash[key] = [] }
           
@@ -233,14 +237,14 @@ module Cover
           
           table_name = case table
             when :point
-              "planet_osm_point"
+              @table_prefix + "_point"
             when :line
-              "planet_osm_line"
+              @table_prefix + "_line"
             when :polygon
-              "planet_osm_polygon"
+              @table_prefix + "_polygon"
           end
           
-          intersection = "way && ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)"
+          intersection = "#{@connection.quote_ident(@geometry_column)} && ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)"
           
           conditions = (["FALSE"] + selections.map do |selection|
             "(" + (["TRUE"] + (selection.options[:sql] || [])).join(" AND ") + ")"

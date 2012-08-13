@@ -53,13 +53,13 @@ class SelectionConfig
       
       # highways and railways, adapted from High Road
       
-      query :line, :geometry => "ST_LineMerge(ST_Collect(ST_Simplify(way, (:scale / :width) * 2)))", :group => true, :simplify => false do
         select %w(highway name ref), :zoom => "9-14", :sql => "highway IN ('motorway')"
         select %w(highway name ref), :zoom => "10-14", :sql => "highway IN ('trunk')"
         select %w(highway name ref), :zoom => "11-14", :sql => "highway IN ('primary', 'secondary')"
         select %w(highway name ref), :zoom => "12-14", :sql => "highway IN ('tertiary', 'trunk_link')"
         select %w(highway name ref), :zoom => "13-14", :sql => "highway IN ('primary_link', 'secondary_link', 'tertiary_link', 'residential', 'unclassified', 'road')"
         select %w(highway name ref), :zoom => "14", :sql => "highway IN ('service', 'minor')"
+      query :line, :geometry => "ST_LineMerge(ST_Collect(ST_SnapToGrid(way, :unit * 2)))", :group => true, :simplify => false do
         
         select %w(railway), :zoom => "14", :sql => "railway IN ('rail')"
         

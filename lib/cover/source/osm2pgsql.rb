@@ -204,9 +204,9 @@ module Cover
           geometry_expression = options[:geometry] || "way"
           
           if Numeric === options[:simplify]
-            geometry_expression = "ST_SimplifyPreserveTopology(#{geometry_expression}, (:scale / :width) * #{options[:simplify]})"
+            geometry_expression = "ST_SimplifyPreserveTopology(#{geometry_expression}, :unit * #{options[:simplify]})"
           elsif options[:simplify] != false
-            geometry_expression = "ST_SimplifyPreserveTopology(#{geometry_expression}, :scale / :width)"
+            geometry_expression = "ST_SimplifyPreserveTopology(#{geometry_expression}, :unit)"
           end
           
           geometry_item = (case table

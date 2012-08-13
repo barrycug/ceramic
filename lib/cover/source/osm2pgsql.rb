@@ -189,7 +189,7 @@ module Cover
           
           subquery = build_subquery(table, options, selections)
           
-          columns = selections.inject([]) { |c, s| c | s.columns }.map { |c| quote_selection_column_name(c) }
+          columns = selections.inject([]) { |c, s| c | s.columns }.map { |c| selection_column_name(c) }
           
           select_list = (["ST_AsGeoJSON(way, 0) AS way"] + columns).join(", ")
           
@@ -220,13 +220,13 @@ module Cover
           
           selections.each do |selection|
             selection.columns.each do |column|
-              column_conditions[column] << selection.options[:sql].join(" AND ")
+              column_conditions[column] << (["TRUE"] + (selection.options[:sql] || [])).join(" AND ")
             end
           end
           
           conditional_columns = column_conditions.map do |(column, conditions)|
             condition = conditions.map { |c| "(#{c})" }.join(" OR ")
-            "CASE WHEN #{condition} THEN #{quote_selection_column_name(column)} ELSE NULL END AS #{quote_selection_column_name(column)}"
+            "CASE WHEN #{condition} THEN #{selection_column_value(column)} ELSE NULL END AS #{selection_column_name(column)}"
           end
           
           select_list = ([geometry_item] + conditional_columns).join(", ")
@@ -243,25 +243,39 @@ module Cover
           intersection = "way && ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)"
           
           conditions = (["FALSE"] + selections.map do |selection|
-            "(" + (["TRUE"] + selection.options[:sql]).join(" AND ") + ")"
+            "(" + (["TRUE"] + (selection.options[:sql] || [])).join(" AND ") + ")"
           end).join(" OR ")
           
-          group = if options[:group]
-            columns = selections.inject([]) { |c, s| c | s.columns }.map { |c| quote_selection_column_name(c) }
-            "GROUP BY " + columns.join(", ")
-          else
-            ""
+          if options[:group]
+            columns = selections.inject([]) { |c, s| c | s.columns }.map { |c| selection_column_name(c) }
+            group = columns.join(", ")
           end
           
-          "SELECT #{select_list} " +
-          "FROM #{table_name} " +
-          "WHERE (#{intersection}) AND (#{conditions}) " +
-          "#{group}"
+          query = ""
+          query += "SELECT #{select_list} "
+          query += "FROM #{table_name} "
+          query += "WHERE (#{intersection}) "
+          query += "AND (#{conditions}) "
+          query += "GROUP BY #{group} " if group
+          
+          query
           
         end
         
-        def quote_selection_column_name(selection_column)
-          if Symbol === selection_column
+        def selection_column_name(selection_column)
+          if Array === selection_column
+            selection_column_name(selection_column[0])
+          elsif Symbol === selection_column
+            @connection.quote_ident(selection_column.to_s)
+          else
+            selection_column
+          end
+        end
+        
+        def selection_column_value(selection_column)
+          if Array === selection_column
+            selection_column[1]
+          elsif Symbol === selection_column
             @connection.quote_ident(selection_column.to_s)
           else
             selection_column

@@ -7,6 +7,8 @@ require "json"
 module Cover
 
   class Viewer < Sinatra::Base
+    
+    set :root, File.dirname(__FILE__) + "/../viewer/"
   
     def initialize(options = {})
     

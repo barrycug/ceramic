@@ -6,7 +6,6 @@ $LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
 $LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
 require "trollop"
 require "cover"
-require "./#{File.dirname(__FILE__)}/../viewer/viewer"
 
 options = Trollop::options do
   opt :center, "Initial map center as lat,lon,zoom, for example: 37.7392,-122.3011,9", :type => :string

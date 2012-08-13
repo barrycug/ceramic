@@ -90,7 +90,7 @@ Cover.config.teardown if Cover.config.respond_to?(:teardown)
 
 # write gallery
 
-erb = ERB.new(File.read(File.dirname(__FILE__) + "/../gallery_templates/gallery.erb"))
+erb = ERB.new(File.read(File.dirname(__FILE__) + "/../lib/gallery/index.erb"))
 
 File.open(File.join(options[:output], "index.html"), "w+") do |f|
   f << erb.result(binding)

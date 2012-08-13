@@ -189,7 +189,7 @@ module Cover
           
           subquery = build_subquery(table, options, selections)
           
-          columns = selections.inject([]) { |c, s| c | s.columns }.map { |c| @connection.quote_ident(c) }
+          columns = selections.inject([]) { |c, s| c | s.columns }.map { |c| quote_selection_column_name(c) }
           
           select_list = (["ST_AsGeoJSON(way, 0) AS way"] + columns).join(", ")
           
@@ -198,8 +198,6 @@ module Cover
         end
         
         def build_subquery(table, options, selections)
-          
-          columns = selections.inject([]) { |c, s| c | s.columns }.map { |c| @connection.quote_ident(c) }
           
           geometry_expression = options[:geometry] || "way"
           
@@ -228,7 +226,7 @@ module Cover
           
           conditional_columns = column_conditions.map do |(column, conditions)|
             condition = conditions.map { |c| "(#{c})" }.join(" OR ")
-            "CASE WHEN #{condition} THEN #{@connection.quote_ident(column)} ELSE NULL END AS #{@connection.quote_ident(column)}"
+            "CASE WHEN #{condition} THEN #{quote_selection_column_name(column)} ELSE NULL END AS #{quote_selection_column_name(column)}"
           end
           
           select_list = ([geometry_item] + conditional_columns).join(", ")
@@ -249,6 +247,7 @@ module Cover
           end).join(" OR ")
           
           group = if options[:group]
+            columns = selections.inject([]) { |c, s| c | s.columns }.map { |c| quote_selection_column_name(c) }
             "GROUP BY " + columns.join(", ")
           else
             ""
@@ -259,6 +258,14 @@ module Cover
           "WHERE (#{intersection}) AND (#{conditions}) " +
           "#{group}"
           
+        end
+        
+        def quote_selection_column_name(selection_column)
+          if Symbol === selection_column
+            @connection.quote_ident(selection_column.to_s)
+          else
+            selection_column
+          end
         end
         
         def wrap_point_geometry(column)

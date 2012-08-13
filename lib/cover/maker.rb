@@ -18,9 +18,10 @@ module Cover
       io << "}"
     end
     
-    def write_metatile(metatile_index, io)
+    def write_metatile(metatile_index, io, options = {})
       
-      size = 8
+      size = options[:size] || 8
+      
       mx = metatile_index.x
       my = metatile_index.y
       mz = metatile_index.z

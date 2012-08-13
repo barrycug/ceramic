@@ -8,13 +8,11 @@ require "tirex_backend"
 
 class CoverBackend
   
-  def setup(map_configs, debug)
+  def setup(map_configs)
     
-    @debug = debug
+    Syslog.debug("Got setup, map_configs=#{map_configs.inspect}")
     
-    log_debug("Got setup, map_configs=#{map_configs.inspect}")
-    
-    @configs = map_configs.inject({}) do |hash, (name, map_config)|
+    @configurations = map_configs.inject({}) do |configs, (name, map_config)|
       
       unless map_config.has_key?("cover_config_path")
         raise ArgumentError, "Cover configuration file not specified"
@@ -35,47 +33,54 @@ class CoverBackend
         raise ArgumentError, "Object assigned to Cover.config does not respond to :maker"
       end
       
-      Cover.config.setup if Cover.config.respond_to?(:setup)
+      metatile_size = map_config["cover_metatile_size"].to_i || 8
       
-      hash[name] = Cover.config
-      hash
+      configs[name] = {
+        :cover_config => Cover.config,
+        :metatile_size => metatile_size
+      }
+      
+      Syslog.debug("Added configuration for map=#{name}: #{configs[name].inspect}")
+      
+      configs
       
     end
     
-    log_debug("Done setup, configs=#{@configs.inspect}")
+    @configurations.each do |name, configuration|
+      if configuration[:cover_config].respond_to?(:setup)
+        Syslog.debug("Sending setup to Cover config for map=#{name}")
+        configuration[:cover_config].setup
+      end
+    end
     
   end
   
   def teardown
     
-    log_debug("Got teardown")
+    Syslog.debug("Got teardown")
     
-    @configs.each do |name, config|
-      config.teardown if config.respond_to?(:teardown)
+    @configurations.each do |name, configuration|
+      if configuration[:cover_config].respond_to?(:teardown)
+        Syslog.debug("Sending teardown to Cover config for map=#{name}")
+        configuration[:cover_config].teardown
+      end
     end
     
   end
   
   def write(metatile_info, io)
     
-    log_debug("Request to write metatile: map=#{metatile_info.map} x=#{metatile_info.x} y=#{metatile_info.y} z=#{metatile_info.z}")
+    Syslog.debug("Request to write metatile: map=#{metatile_info.map} x=#{metatile_info.x} y=#{metatile_info.y} z=#{metatile_info.z}")
     
-    raise ArgumentError, "Unknown map name" unless @configs.has_key?(metatile_info.map)
+    raise ArgumentError, "Unknown map name" unless @configurations.has_key?(metatile_info.map)
     
-    config = @configs[metatile_info.map]
+    configuration = @configurations[metatile_info.map]
+    
     index = Cover::TileIndex.new(metatile_info.z, metatile_info.x, metatile_info.y)
     
-    config.maker.write_metatile(index, io)
+    configuration[:cover_config].maker.write_metatile(index, io, :size => configuration[:metatile_size])
     
   end
-  
-  protected
-  
-    def log_debug(message)
-      if @debug != nil
-        Syslog.debug(message)
-      end
-    end
   
 end
 

@@ -57,6 +57,12 @@ class TirexBackend
     
     Syslog.open(@config["name"], Syslog::LOG_PID, syslog_facility)
     
+    if @config["debug"]
+      Syslog.mask = Syslog::LOG_UPTO(Syslog::LOG_DEBUG)
+    else
+      Syslog.mask = Syslog::LOG_UPTO(Syslog::LOG_ERR)
+    end
+    
     # Read map configs
     
     @map_configs = {}
@@ -71,7 +77,7 @@ class TirexBackend
     # Setup handler
     
     @handler = handler
-    @handler.setup(@map_configs, @config["debug"] != nil) if @handler.respond_to?(:setup)
+    @handler.setup(@map_configs) if @handler.respond_to?(:setup)
     
     # Open keepalive pipe
     
@@ -102,7 +108,7 @@ class TirexBackend
     
     while @keep_running do
       
-      log_debug("Sending alive message to backend manager")
+      Syslog.debug("Sending alive message to backend manager")
       @parent.write_nonblock("alive")
       
       begin
@@ -123,7 +129,7 @@ class TirexBackend
     
     # Teardown
     
-    log_debug("Asking handler to do teardown...")
+    Syslog.debug("Asking handler to do teardown...")
     @handler.teardown if @handler.respond_to?(:teardown)
     
     @parent.close
@@ -132,18 +138,12 @@ class TirexBackend
   
   private
   
-    def log_debug(message)
-      if @config["debug"] != nil
-        Syslog.debug(message)
-      end
-    end
-  
     def process_message(message)
       request = deserialize_message(message)
-      log_debug("Processing request: #{request.inspect}")
+      Syslog.debug("Processing request: #{request.inspect}")
       
       response = process_request(request)
-      log_debug("Returning response: #{response.inspect}")
+      Syslog.debug("Returning response: #{response.inspect}")
       
       serialize_message(response)
     end
@@ -207,7 +207,7 @@ class TirexBackend
         
       end
       
-      log_debug("Metatile written to: #{metatile_path}")
+      Syslog.debug("Metatile written to: #{metatile_path}")
       
       {
         "type" => "metatile_render_request",

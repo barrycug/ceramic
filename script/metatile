@@ -41,7 +41,7 @@ end
 Cover.config.setup
 
 File.open(options[:output], "wb+") do |f|
-  Cover.config.maker.write_metatile(options[:tile], f)
+  Cover.config.maker.write_metatile(options[:tile], f, :size => options[:size])
 end
 
 Cover.config.teardown

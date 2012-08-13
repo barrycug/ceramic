@@ -160,7 +160,7 @@ class SelectionConfig
     
     pairs = []
     
-    pairs << [@lz_coastline_source, @coastline_writer]
+    # pairs << [@lz_coastline_source, @coastline_writer]
     pairs << [@coastline_source, @coastline_writer]
     pairs << [@osm_source, @osm_writer]
     

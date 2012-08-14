@@ -11,104 +11,107 @@ require "cover"
 
 options = Trollop::options do
   opt :config, "Configuration file", :type => :string, :required => true
-  opt :tiles, "Tile indices", :type => :strings
-  opt :metatiles, "Metatile indices", :type => :strings
-  opt :size, "Metatile size", :type => :integer, :default => 8
+  opt :tile, "Tile indices (<z>/<x>/<y> or path to file)", :type => :strings
+  opt :metatile, "Metatile indices (<z>/<x>/<y> or path to file)", :type => :strings
+  opt :"metatile-size", "Metatile size", :type => :integer, :default => 8
 end
 
-if (options[:tiles] == nil && options[:metatiles] == nil) ||
-   (options[:tiles] != nil && options[:metatiles] != nil)
-  Trollop::die "must specify either tiles or metatiles (not both)"
+begin
+  config = Cover::Util.load_config(options[:config])
+rescue ArgumentError
+  Trollop::die "couldn't load config file #{options[:config]}"
 end
 
-require File.expand_path(options[:config])
-  
-if !Cover.config.respond_to?(:maker)
-  puts "Config file must assign to Cover.config an object which responds to #maker"
-  exit
+begin
+  tile_indices = Cover::Util.load_tile_indices(options[:tile]) if options[:tile]
+rescue ArgumentError
+  Trollop::die "tile indices must be in the form <z>/<x>/<y>"
 end
 
-if Cover.config.respond_to?(:setup)
-  Cover.config.setup
+begin
+  metatile_indices = Cover::Util.load_tile_indices(options[:metatile]) if options[:metatile]
+rescue ArgumentError
+  Trollop::die "tile indices must be in the form <z>/<x>/<y>"
 end
 
-# assemble tile indices
+# Benchmarking
 
-tile_indices = []
+config.setup if config.respond_to?(:setup)
 
-(options[:tiles] || options[:metatiles] || []).each do |index|
+# Tiles
 
-  # if an index is a file, read tile indexes from that file, skipping
-  # lines that start with "#".
+if tile_indices
 
-  if File.exist?(index)
-    File.open(index, "r").each_line do |line|
-      next if line =~ /^#/ || line =~ /^\s*$/
-      tile_indices << Cover::TileIndex.new(line)
-    end
-  else
-    tile_indices << Cover::TileIndex.new(index)
-  end
-
-end
-
-# do benchmarking
-
-if options[:tiles]
-  puts "%-20s  %7s  %11s  %11s" % ["", "Time", "Size", "Zipped"]
+  puts "%-20s  %7s  %11s  %11s" % ["Tile", "Time", "Size", "Zipped"]
   puts "=" * 55
-else
-  puts "%-20s  %7s  %11s" % ["", "Time", "Size"]
-  puts "=" * 42
-end
 
-total_time = 0.0
-total_size = 0
-total_compressed_size = 0
+  total_time = 0.0
+  total_size = 0
+  total_compressed_size = 0
 
-tile_indices.each do |tile_index|
+  tile_indices.each do |tile_index|
   
-  io = StringIO.new("")
+    io = StringIO.new("")
   
-  start = Time.now
+    start = Time.now
   
-  if options[:tiles]
-    Cover.config.maker.write_tile(tile_index, io)
-  else
-    Cover.config.maker.write_metatile(tile_index, io)
-  end
+    config.maker.write_tile(tile_index, io)
   
-  time = Time.now - start
-  size = io.string.bytesize
+    time = Time.now - start
+    size = io.string.bytesize
   
-  if options[:tiles]
     compressed_size = Zlib.deflate(io.string).bytesize
-  else
-    compressed_size = 0
-  end
   
-  total_time += time
-  total_size += size
-  total_compressed_size += compressed_size
+    total_time += time
+    total_size += size
+    total_compressed_size += compressed_size
   
-  if options[:tiles]
     puts "%-20s  % 5.2f s  % 8.1f kB  % 8.1f kB" % [tile_index, time, size.to_f / 1000, compressed_size.to_f / 1000]
-  else
-    puts "%-20s  % 5.2f s  % 8.1f kB" % [tile_index, time, size.to_f / 1000]
-  end
   
-end
+  end
 
-if options[:tiles]
   puts "-" * 55
   puts "%-20s  % 5.2f s  % 8.1f kB  % 8.1f kB" % ["Total", total_time, total_size.to_f / 1000, total_compressed_size.to_f / 1000]
   puts "%-20s  % 5.2f s  % 8.1f kB  % 8.1f kB" % ["Mean", total_time / tile_indices.size, (total_size.to_f / 1000) / tile_indices.size, (total_compressed_size.to_f / 1000) / tile_indices.size]
-else
-  puts "-" * 42
-  puts "%-20s  % 5.2f s  % 8.1f kB" % ["Total", total_time, total_size.to_f / 1000]
-  puts "%-20s  % 5.2f s  % 8.1f kB" % ["Mean", total_time / tile_indices.size, (total_size.to_f / 1000) / tile_indices.size]
+  
 end
 
-if Cover.config.respond_to?(:teardown)
-  Cover.config.teardown
+if tile_indices && metatile_indices
+  puts
 end
+
+# Metatiles
+
+if metatile_indices
+
+  puts "%-20s  %7s  %11s" % ["Metatile", "Time", "Size"]
+  puts "=" * 42
+
+  total_time = 0.0
+  total_size = 0
+
+  metatile_indices.each do |tile_index|
+  
+    io = StringIO.new("")
+  
+    start = Time.now
+  
+    config.maker.write_metatile(tile_index, io, :size => options[:"metatile-size"])
+  
+    time = Time.now - start
+    size = io.string.bytesize
+  
+    total_time += time
+    total_size += size
+  
+    puts "%-20s  % 5.2f s  % 8.1f kB" % [tile_index, time, size.to_f / 1000]
+  
+  end
+
+  puts "-" * 42
+  puts "%-20s  % 5.2f s  % 8.1f kB" % ["Total", total_time, total_size.to_f / 1000]
+  puts "%-20s  % 5.2f s  % 8.1f kB" % ["Mean", total_time / metatile_indices.size, (total_size.to_f / 1000) / metatile_indices.size]
+  
+end
+
+config.teardown if config.respond_to?(:teardown)

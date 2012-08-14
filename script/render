@@ -1,0 +1,58 @@
+#!/usr/bin/env ruby
+require "rubygems"
+
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
+$LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
+require "trollop"
+require "cover"
+
+options = Trollop::options do
+  opt :config, "Configuration file", :type => :string, :required => true
+  opt :tile, "Tile index (<z>/<x>/<y>)", :type => :string
+  opt :metatile, "Metatile index (<z>/<x>/<y>)", :type => :string
+  opt :"metatile-size", "Metatile size", :type => :integer, :default => 8
+end
+
+unless (options[:tile] != nil) ^ (options[:metatile] != nil)
+  Trollop::die "must specify either a tile index or a metatile index"
+end
+
+if ARGV.any?
+  output_path = ARGV.shift
+else
+  Trollop::die "must specify an output path for the tile"
+end
+
+begin
+  config = Cover::Util.load_config(options[:config])
+rescue ArgumentError
+  Trollop::die "couldn't load config file #{options[:config]}"
+end
+
+begin
+  tile_index = Cover::TileIndex.new(options[:tile]) if options[:tile]
+rescue ArgumentError
+  Trollop::die "tile indices must be in the form <z>/<x>/<y>"
+end
+
+begin
+  metatile_index = Cover::TileIndex.new(options[:metatile]) if options[:metatile]
+rescue ArgumentError
+  Trollop::die "tile indices must be in the form <z>/<x>/<y>"
+end
+
+if config.respond_to?(:setup)
+  config.setup
+end
+
+File.open(output_path, "wb+") do |f|
+  if tile_index
+    config.maker.write_tile(tile_index, f)
+  else
+    config.maker.write_metatile(metatile_index, f, :size => options[:"metatile-size"])
+  end
+end
+
+if config.respond_to?(:teardown)
+  config.teardown
+end

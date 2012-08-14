@@ -12,91 +12,67 @@ require "cover"
 
 options = Trollop::options do
   opt :config, "Configuration file", :type => :string, :required => true
-  opt :tiles, "Tile indices (z/x/y)", :type => :strings, :required => true
-  opt :output, "Output directory", :type => :string, :required => true
-  opt :watch, "Watch config file for changes?", :type => :boolean, :default => false
+  opt :tile, "Tile indices (<z>/<x>/<y> or path to file)", :type => :strings, :required => true
 end
 
-# assemble tile indices
-
-def process_index_list(list)
-  
-  result = []
-  
-  list.each do |index|
-  
-    # if an index is a file, read tile indexes from that file, skipping
-    # lines that start with "#".
-  
-    if File.exist?(index)
-      File.open(index, "r").each_line do |line|
-        next if line =~ /^#/ || line =~ /^\s*$/
-        result << Cover::TileIndex.new(line)
-      end
-    else
-      result << Cover::TileIndex.new(index)
-    end
-  
-  end
-  
-  result
-  
+if ARGV.any?
+  output_path = ARGV.shift
+else
+  Trollop::die "must specify an output path for the gallery"
 end
 
-tiles = process_index_list(options[:tiles] || [])
-
-# create output directory
-
-FileUtils.mkdir_p(options[:output])
-
-# load config and do setup
-
-require File.expand_path(options[:config])
-  
-if !Cover.config.respond_to?(:maker)
-  puts "Config file must assign to Cover.config an object which responds to #maker"
-  exit
+begin
+  config = Cover::Util.load_config(options[:config])
+rescue ArgumentError
+  Trollop::die "couldn't load config file #{options[:config]}"
 end
 
-Cover.config.setup if Cover.config.respond_to?(:setup)
+begin
+  tile_indices = Cover::Util.load_tile_indices(options[:tile]) if options[:tile]
+rescue ArgumentError
+  Trollop::die "tile indices must be in the form <z>/<x>/<y>"
+end
 
-# write tiles to output dir
+# Create output directory
+
+FileUtils.mkdir_p(output_path)
+
+# Write tiles to output directory
+
+config.setup if config.respond_to?(:setup)
 
 @tiles = []
 
-tiles.each do |tile|
+tile_indices.each do |tile_index|
   
-  filename = "#{tile.z}-#{tile.x}-#{tile.y}.json"
-  path = File.join(options[:output], filename)
+  filename = "#{tile_index.z}-#{tile_index.x}-#{tile_index.y}.json"
+  path = File.join(output_path, filename)
   
-  puts "Writing #{tile} to #{path}..."
+  puts "Writing #{tile_index} to #{path}..."
   
   start = Time.now
   
-  File.open(path, "w+") do |f|
-    Cover.config.maker.write_tile(tile, f)
+  File.open(path, "wb+") do |f|
+    config.maker.write_tile(tile_index, f)
   end
   
   size = File.size(path)
   time = Time.now - start
   
-  puts "#{size / 1000.0} kB, #{time} s"
-  
   @tiles << { "size" => size, "time" => time, "filename" => filename }
   
 end
 
-Cover.config.teardown if Cover.config.respond_to?(:teardown)
+config.teardown if config.respond_to?(:teardown)
 
-# write gallery
+# Write gallery
 
-erb = ERB.new(File.read(File.dirname(__FILE__) + "/../lib/gallery/index.erb"))
+template_root = File.dirname(__FILE__) + "/../lib/gallery/"
 
-File.open(File.join(options[:output], "index.html"), "w+") do |f|
+erb = ERB.new(File.read(template_root + "index.erb"))
+
+File.open(File.join(output_path, "index.html"), "w+") do |f|
   f << erb.result(binding)
 end
 
-# copy rendering script
-
-FileUtils.cp(File.dirname(__FILE__) + "/../gallery_templates/render.js", File.join(options[:output], "render.js"))
-
+FileUtils.cp(template_root + "render.js", File.join(output_path, "render.js"))

@@ -14,30 +14,9 @@ class CoverBackend
     
     @configurations = map_configs.inject({}) do |configs, (name, map_config)|
       
-      unless map_config.has_key?("cover_config_path")
-        raise ArgumentError, "Cover configuration file not specified"
-      end
-      
-      unless File.exist?(map_config["cover_config_path"])
-        raise ArgumentError, "Cover configuration file not found: #{map_config["cover_config_path"]}"
-      end
-      
-      Cover.config = nil
-      require File.expand_path(map_config["cover_config_path"])
-      
-      unless Cover.config != nil
-        raise ArgumentError, "Cover configuration file did not assign Cover.config"
-      end
-      
-      unless Cover.config.respond_to?(:maker)
-        raise ArgumentError, "Object assigned to Cover.config does not respond to :maker"
-      end
-      
-      metatile_size = map_config["cover_metatile_size"].to_i || 8
-      
       configs[name] = {
-        :cover_config => Cover.config,
-        :metatile_size => metatile_size
+        :cover_config => Cover::Util.load_config(map_config["cover_config_path"]),
+        :metatile_size => map_config["cover_metatile_size"].to_i || 8
       }
       
       Syslog.debug("Added configuration for map=#{name}: #{configs[name].inspect}")

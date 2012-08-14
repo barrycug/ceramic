@@ -45,9 +45,9 @@ class SelectionConfig
   
   def initialize
     
-    @lz_coastline_source = Cover::Source::Coastline.new("lz_coastlines", :zoom => "0-9", :geometry => "geom")
+    @lz_coastline_source = Cover::Source::Coastline.new("lz_coastlines", :zoom => "0-9", :geometry_column => "geom")
     
-    @coastline_source = Cover::Source::Coastline.new("coastlines", :zoom => "10-", :geometry => "geom")
+    @coastline_source = Cover::Source::Coastline.new("coastlines", :zoom => "10-", :geometry_column => "geom")
     
     @osm_source = Cover::Source::OSM2PGSQL.new do
       

@@ -9,8 +9,8 @@ module Cover
       
       def initialize(table, options = {})
         @table = table
-        @geometry_column = options[:geometry] || "the_geom"
-        @srid = options[:srid] || 3857
+        @geometry_column = options[:geometry_column] || "the_geom"
+        @geometry_srid = options[:geometry_srid] || 3857
         @zoom = Cover::Util.parse_zoom(options[:zoom]) if options[:zoom]
       end
       
@@ -66,7 +66,7 @@ END
           bounds.width,   # 5
           bounds.height,  # 6
           scale,          # 7
-          @srid           # 8
+          @geometry_srid  # 8
         ]
         
         Enumerator.new do |y|

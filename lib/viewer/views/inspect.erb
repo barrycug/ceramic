@@ -19,20 +19,7 @@
     
       <ul>
         <li>Fetch time: <%= "%.2f" % @fetch_time %> s</li>
-        <li>File size: <%= "%.1f" % (@tile.bytesize.to_f / 1000) %> kB, <%= "%.1f" % (Zlib.deflate(@tile, 9).bytesize.to_f / 1000) %> kB deflated</li>
-        <li>Feature count: <%= @feature_count %></li>
-      </ul>
-    </article>
-    
-    <article>
-      <h1>Feature tag distribution</h1>
-      
-      <p>Combined keys: <%= @combined_keys.join(", ") %></p>
-    
-      <ul>
-        <% @distribution.each do |(tags, count)| %>
-          <li><%= tags %>: <%= count %></li>
-        <% end %>
+        <li>File size: <%= "%.1f" % (@file_size / 1000) %> kB, <%= "%.1f" % (@compressed_file_size / 1000) %> kB compressed</li>
       </ul>
     </article>
     
@@ -49,6 +36,29 @@
         var zoom = <%= params[:z] %>;
       
         var canvas, context;
+      
+        // draw with debug renderer
+      
+        canvas = document.getElementById("debug");
+        context = canvas.getContext("2d");
+      
+        DebugRender.renderTile(canvas, data);
+      
+        // draw grid
+      
+        var i;
+      
+        context.beginPath();
+      
+        for (i = 4; i < canvas.width; i += 4) {
+          context.moveTo(i - 0.5, 0);
+          context.lineTo(i - 0.5, canvas.height);
+          context.moveTo(0, i - 0.5);
+          context.lineTo(canvas.width, i - 0.5);
+        }
+      
+        context.strokeStyle = "rgba(0, 0, 0, 0.05)";
+        context.stroke();
       
         // draw with kothic
       
@@ -77,29 +87,6 @@
     
         canvas = document.getElementById("kothic");
         kothic.render(canvas, kothicData, zoom, function(t) {});
-      
-        // draw with debug renderer
-      
-        canvas = document.getElementById("debug");
-        context = canvas.getContext("2d");
-      
-        DebugRender.renderTile(canvas, data);
-      
-        // draw grid
-      
-        var i;
-      
-        context.beginPath();
-      
-        for (i = 4; i < canvas.width; i += 4) {
-          context.moveTo(i - 0.5, 0);
-          context.lineTo(i - 0.5, canvas.height);
-          context.moveTo(0, i - 0.5);
-          context.lineTo(canvas.width, i - 0.5);
-        }
-      
-        context.strokeStyle = "rgba(0, 0, 0, 0.05)";
-        context.stroke();
         
       }
       

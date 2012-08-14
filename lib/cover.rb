@@ -4,7 +4,6 @@ require "cover/util"
 require "cover/maker"
 require "cover/tile_index"
 require "cover/source"
-require "cover/tileset"
 require "cover/viewer"
 
 module Cover

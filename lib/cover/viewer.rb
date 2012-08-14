@@ -14,16 +14,10 @@ module Cover
     
       super()
       
-      if options[:tileset]
-        @tileset = options[:tileset]
-        @format = @tileset.select_metadata["format"]
-      else
-        @maker = options[:maker]
-        @format = "js"
-      end
+      @maker = options[:maker]
 
       if options[:center] =~ /(\-?\d+(?:\.\d+)?),(\-?\d+(?:\.\d+)?),(\d+)/
-        @center = [$1,$2,$3]
+        @center = [$1, $2, $3]
       end
     
     end
@@ -34,123 +28,34 @@ module Cover
   
     get "/:z/:x/:y" do
       
-      hash = get_hash(params[:z], params[:x], params[:y])
-      
-      if hash != nil
-        etag hash
-      end
-      
-      tile = fetch_tile(params[:z], params[:x], params[:y])
-      
-      if tile == nil
-        halt 404
-      end
-        
-      # If the tile is already deflated and the client will accept
-      # deflate, pass as-is with content-encoding set. Otherwise,
-      # inflate the tile.
-      
-      if @format == "js.deflate"
-        encoding = Rack::Utils.select_best_encoding(%w(deflate identity), request.accept_encoding)
-        
-        if encoding == "deflate"
-          headers "Content-Encoding" => "deflate"
-        else
-          tile = Zlib.inflate(tile)
-        end
-      end
-      
       content_type :js
       
-      tile
+      fetch_tile(params)
       
     end
     
     get "/:z/:x/:y/inspect" do
       
       start = Time.now
-      @tile = fetch_tile(params[:z], params[:x], params[:y])
+      
+      @tile = fetch_tile(params)
+      
       @fetch_time = Time.now - start
-      
-      if @tile == nil
-        halt 404
-      end
-      
-      if @format == "js.deflate"
-        @tile = Zlib.inflate(@tile)
-      end
-      
-      parsed = JSON.parse(@tile.force_encoding("UTF-8"))
-      
-      @feature_count = parsed["features"].size
-      
-      @combined_keys = %w(name ref ele layer operator)
-      
-      @distribution = parsed["features"].inject({}) do |dist, feature|
-        if Enumerable === feature["tags"]
-          tags = feature["tags"].inject({}) do |t, (key, value)|
-            if @combined_keys.include?(key)
-              t[key] = true
-            else
-              t[key] = value
-            end
-            t
-          end
-          dist[tags] = (dist[tags] || 0) + 1
-        end
-        dist
-      end.to_a.sort_by do |p|
-        p[1]
-      end.reverse.map do |p|
-        [JSON.dump(p[0]), p[1]]
-      end
+      @file_size = @tile.bytesize
+      @compressed_file_size = Zlib.deflate(@tile).bytesize
     
       erb :inspect
       
     end
   
     protected
-  
-      # Grab the tile from either the tileset or the renderer
-      # and wrap it in a callback.
-  
-      def fetch_tile(z, x, y)
-      
-        index = Cover::TileIndex.new(z.to_i, x.to_i, y.to_i)
     
-        if @tileset
-          
-          data = @tileset.select_tile(index)
-          
-          if data == nil
-            nil
-          else
-            data
-          end
-          
-        else
-          
-          io = StringIO.new("")
-          @maker.write_tile(index, io)
-          io.string
-          
-        end
+      def fetch_tile(params)
+        tile_index = Cover::TileIndex.new(params[:z].to_i, params[:x].to_i, params[:y].to_i)
         
-      end
-      
-      def get_hash(z, x, y)
-        
-        if @tileset
-          
-          index = Cover::TileIndex.new(z.to_i, x.to_i, y.to_i)
-          @tileset.select_hash(index)
-          
-        else
-          
-          nil
-          
-        end
-        
+        io = StringIO.new("")
+        @maker.write_tile(tile_index, io)
+        io.string
       end
   
   end

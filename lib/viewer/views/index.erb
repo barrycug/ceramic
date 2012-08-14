@@ -43,14 +43,9 @@
         options.center = new L.LatLng(0, 0);
       <% end %>
       
-      <% if @zoom %>
-        options.minZoom = <%= @zoom.min %>;
-        options.maxZoom = <%= @zoom.max %>;
-      <% end %>
-      
-      var center;
+      var center = window.location.hash.slice(1).match(/(\d+)\/(\-?\d+(?:\.\d+)?)\/(\-?\d+(?:\.\d+)?)/);
         
-      if (center = window.location.hash.slice(1).match(/(\d+)\/(\-?\d+(?:\.\d+)?)\/(\-?\d+(?:\.\d+)?)/)) {
+      if (center) {
         options.center = new L.LatLng(parseFloat(center[2]), parseFloat(center[3]));
         options.zoom = parseInt(center[1]);
       }

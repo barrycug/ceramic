@@ -22,7 +22,7 @@ class TargetConfig
       end
       
       query :line, :polygon do
-        select [:osm_id, [:osm_type, "case when osm_id < 0 then 'relation' else 'way' end"]], :zoom => "16-"
+        select [[:osm_id, "abs(osm_id)"], [:osm_type, "case when osm_id < 0 then 'relation' else 'way' end"]], :zoom => "16-"
       end
     end
     

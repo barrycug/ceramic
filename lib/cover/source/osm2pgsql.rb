@@ -126,7 +126,7 @@ module Cover
       
       def select_rows(tile_index, scale)
         
-        statements = statements_for_zoom(tile_index.z)
+        postgis_queries = postgis_queries_for_zoom(tile_index.z)
         
         bounds = tile_index.bounds
         
@@ -144,8 +144,8 @@ module Cover
         
         Enumerator.new do |y|
           
-          statements.each do |statement|
-            arguments = build_arguments(statement, parameters)
+          postgis_queries.each do |postgis_query|
+            arguments = PostGISQuery.build_exec_arguments(postgis_query, parameters)
             
             connection.exec(*arguments) do |result|
               result.each { |row| y << row }
@@ -158,20 +158,7 @@ module Cover
       
       private
       
-        def build_arguments(statement, parameters)
-          result = statement.dup
-          numbered = []
-  
-          parameters.each do |name, (value, type)|
-            if result.gsub!(":#{name}", "$#{numbered.size + 1}::#{type}")
-              numbered << value
-            end
-          end
-  
-          [result, numbered]
-        end
-      
-        def statements_for_zoom(zoom)
+        def postgis_queries_for_zoom(zoom)
           
           @queries.inject([]) do |statements, query|
             
@@ -182,58 +169,16 @@ module Cover
             next statements if selections.empty?
             
             statements + query.tables.map do |table|
-              build_statement(table, query.options, selections)
+              build_postgis_query(table, query.options, selections)
             end
             
           end
 
         end
         
-        def build_statement(table, options, selections)
+        def build_postgis_query(table, options, selections)
           
-          subquery = build_subquery(table, options, selections)
-          
-          columns = selections.inject([]) { |c, s| c | s.columns }.map { |c| selection_column_name(c) }
-          
-          select_list = (["ST_AsGeoJSON(#{@connection.quote_ident(@geometry_column)}, 0) AS #{@connection.quote_ident(@geometry_column)}"] + columns).join(", ")
-          
-          "SELECT #{select_list} FROM (#{subquery}) q WHERE NOT ST_IsEmpty(#{@connection.quote_ident(@geometry_column)})"
-          
-        end
-        
-        def build_subquery(table, options, selections)
-          
-          geometry_expression = options[:geometry] || @connection.quote_ident(@geometry_column)
-          
-          if Numeric === options[:simplify]
-            geometry_expression = "ST_SimplifyPreserveTopology(#{geometry_expression}, :unit * #{options[:simplify]})"
-          elsif options[:simplify] != false
-            geometry_expression = "ST_SimplifyPreserveTopology(#{geometry_expression}, :unit)"
-          end
-          
-          geometry_item = (case table
-            when :point
-              wrap_point_geometry(geometry_expression)
-            when :line
-              wrap_line_geometry(geometry_expression)
-            when :polygon
-              wrap_polygon_geometry(geometry_expression)
-          end) + " AS #{@connection.quote_ident(@geometry_column)}"
-          
-          column_conditions = Hash.new { |hash, key| hash[key] = [] }
-          
-          selections.each do |selection|
-            selection.columns.each do |column|
-              column_conditions[column] << (["TRUE"] + (selection.options[:sql] || [])).join(" AND ")
-            end
-          end
-          
-          conditional_columns = column_conditions.map do |(column, conditions)|
-            condition = conditions.map { |c| "(#{c})" }.join(" OR ")
-            "CASE WHEN #{condition} THEN #{selection_column_value(column)} ELSE NULL END AS #{selection_column_name(column)}"
-          end
-          
-          select_list = ([geometry_item] + conditional_columns).join(", ")
+          # table name
           
           table_name = case table
             when :point
@@ -244,25 +189,76 @@ module Cover
               @table_prefix + "_polygon"
           end
           
-          intersection = "#{@connection.quote_ident(@geometry_column)} && ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)"
+          # geometry
+          
+          if options[:geometry]
+            geometry_wrap_expressions = [options[:geometry]]
+          else
+            geometry_wrap_expressions = [@geometry_column]
+          end
+          
+          if Numeric === options[:simplify]
+            geometry_wrap_expressions.unshift("ST_SimplifyPreserveTopology($, :unit * #{options[:simplify]})")
+          elsif options[:simplify] != false
+            geometry_wrap_expressions.unshift("ST_SimplifyPreserveTopology($, :unit)")
+          end
+          
+          case table
+          when :point
+            geometry_wrap_expressions.unshift(PostGISQuery::WRAP_POINT)
+          when :line
+            geometry_wrap_expressions.unshift(PostGISQuery::WRAP_LINE)
+          when :polygon
+            geometry_wrap_expressions.unshift(PostGISQuery::WRAP_POLYGON)
+          end
+          
+          geometry = { @geometry_column => geometry_wrap_expressions }
+          
+          if table == :polygon
+            geometry[:point] = [PostGISQuery::WRAP_POINT, "ST_PointOnSurface(ST_Buffer($, 0))", @geometry_column]
+          end
+          
+          # columns
+          
+          column_conditions = Hash.new { |hash, key| hash[key] = [] }
+          
+          selections.each do |selection|
+            selection.columns.each do |column|
+              column_conditions[column] << (["TRUE"] + (selection.options[:sql] || [])).join(" AND ")
+            end
+          end
+          
+          columns = column_conditions.inject({}) do |hash, (column, conditions)|
+            name = selection_column_name(column)
+            value =  selection_column_value(column)
+            condition = conditions.map { |c| "(#{c})" }.join(" OR ")
+            
+            hash[name] = "CASE WHEN #{condition} THEN #{value} ELSE NULL END"
+            hash
+          end
+          
+          # conditions
           
           conditions = (["FALSE"] + selections.map do |selection|
             "(" + (["TRUE"] + (selection.options[:sql] || [])).join(" AND ") + ")"
           end).join(" OR ")
           
+          # group
+          
           if options[:group]
-            columns = selections.inject([]) { |c, s| c | s.columns }.map { |c| selection_column_name(c) }
-            group = columns.join(", ")
+            group = selections.inject([]) { |c, s| c | s.columns }.map { |c| selection_column_name(c) }
           end
           
-          query = ""
-          query += "SELECT #{select_list} "
-          query += "FROM #{table_name} "
-          query += "WHERE (#{intersection}) "
-          query += "AND (#{conditions}) "
-          query += "GROUP BY #{group} " if group
+          # query
           
-          query
+          PostGISQuery.new(
+            :table => table_name,
+            :columns => columns,
+            :geometry => geometry,
+            :conditions => conditions,
+            :group => group,
+            :intersection_geometry_column => @geometry_column
+          )
           
         end
         
@@ -284,50 +280,6 @@ module Cover
           else
             selection_column
           end
-        end
-        
-        def wrap_point_geometry(column)
-          <<-END
-ST_TransScale(
-  #{column},
-  -:left,
-  -:top,
-  :scale / :width,
-  -:scale / :height
-)
-END
-        end
-        
-        def wrap_line_geometry(column)
-          <<-END
-ST_TransScale(
-  ST_Intersection(
-    #{column},
-    ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)
-  ),
-  -:left,
-  -:top,
-  :scale / :width,
-  -:scale / :height
-)
-END
-        end
-        
-        def wrap_polygon_geometry(column)
-          <<-END
-ST_TransScale(
-  ST_ForceRHR(
-    ST_Intersection(
-      ST_Buffer(#{column}, 0),
-      ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)
-    )
-  ),
-  -:left,
-  -:top,
-  :scale / :width,
-  -:scale / :height
-)
-END
         end
       
     end

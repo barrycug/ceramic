@@ -86,7 +86,7 @@ END
         table << "SELECT #{inner_select_items} "
         table << "FROM #{inner_table} "
         table << "WHERE #{inner_conditions} "
-        table << "GROUP BY #{inner_group}" if @options[:group]
+        table << "GROUP BY #{inner_group} " if @options[:group]
         table
       end
     
@@ -127,7 +127,11 @@ END
       end
     
       def inner_group
-        @options[:group].map { |column| quote_identifier(column) }.join(", ")
+        if String === @options[:group]
+          @options[:group]
+        else
+          @options[:group].map { |column| quote_identifier(column) }.join(", ")
+        end
       end
     
       def quote_identifier(name)

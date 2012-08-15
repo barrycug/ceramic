@@ -19,58 +19,38 @@ module Cover
         if @zoom != nil && !@zoom.include?(tile_index.z)
           return Enumerator.new { |y| }
         end
- 
-        query = <<-END
-SELECT
-  ST_AsGeoJSON(
-    #{@connection.quote_ident(@geometry_column)},
-    0
-  ) AS #{@connection.quote_ident(@geometry_column)}
-FROM (
-  SELECT
-    ST_Union(
-      ST_TransScale(
-        ST_ForceRHR(
-          ST_Intersection(
-            ST_Buffer(
-              ST_SimplifyPreserveTopology(
-                #{@connection.quote_ident(@geometry_column)},
-                $5::float / $7::float
-              ),
-              0
-            ),
-            ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int)
-          )
-        ),
-        -$1::float,
-        -$2::float,
-        $7::float / $5::float,
-        -$7::float / $6::float
-      )
-    ) AS #{@connection.quote_ident(@geometry_column)}
-  FROM
-    #{@table}
-  WHERE
-    ST_MakeEnvelope($1::float, $2::float, $3::float, $4::float, $8::int) && #{@connection.quote_ident(@geometry_column)}
-) q
-WHERE NOT ST_IsEmpty(#{@connection.quote_ident(@geometry_column)})
-END
+        
+        query = PostGISQuery.new(
+          :table => @table,
+          :geometry => {
+            @geometry_column => [
+              "ST_Union($)",
+              PostGISQuery::WRAP_POLYGON,
+              "ST_SimplifyPreserveTopology($, :unit)",
+              @geometry_column
+            ]
+          },
+          :intersection_geometry_column => @geometry_column
+        )
         
         bounds = tile_index.bounds
         
-        params = [
-          bounds.left,    # 1
-          bounds.top,     # 2
-          bounds.right,   # 3
-          bounds.bottom,  # 4
-          bounds.width,   # 5
-          bounds.height,  # 6
-          scale,          # 7
-          @geometry_srid  # 8
-        ]
+        parameters = {
+          "scale" => [scale.to_f, "float"],
+          "left" => [bounds.left, "float"],
+          "top" => [bounds.top, "float"],
+          "bottom" => [bounds.bottom, "float"],
+          "right" => [bounds.right, "float"],
+          "width" => [bounds.width, "float"],
+          "height" => [bounds.height, "float"],
+          "unit" => [bounds.width / scale.to_f, "float"],
+          "srid" => [@geometry_srid, "int"]
+        }
+        
+        arguments = PostGISQuery.build_exec_arguments(query, parameters)
         
         Enumerator.new do |y|
-          connection.exec(query, params) do |result|
+          connection.exec(*arguments) do |result|
             result.each do |row|
               y << row
             end
@@ -82,4 +62,5 @@ END
     end
     
   end
+  
 end

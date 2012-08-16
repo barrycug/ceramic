@@ -1,0 +1,32 @@
+#-----------------------------------------------------------------------------
+#
+#  Konfiguration for target map
+#
+#  /etc/tirex/renderer/cover/target.conf
+#
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+#  General configuration
+#-----------------------------------------------------------------------------
+
+#  symbolic name of this map
+name=target
+
+#  tile directory
+tiledir=/var/lib/tirex/tiles/target
+
+#  minimum zoom level allowed (default 0)
+minz=16
+
+#  maximum zoom level allowed (default 17)
+maxz=18
+
+#-----------------------------------------------------------------------------
+#  Backend specific configuration
+#-----------------------------------------------------------------------------
+
+cover_config_path=/var/lib/cover/config/target.rb
+
+
+#-- THE END ------------------------------------------------------------------

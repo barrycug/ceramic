@@ -229,11 +229,10 @@ module Cover
           end
           
           columns = column_conditions.inject({}) do |hash, (column, conditions)|
-            name = selection_column_name(column)
-            value =  selection_column_value(column)
+            quoted = @connection.quote_ident(column.to_s)
             condition = conditions.map { |c| "(#{c})" }.join(" OR ")
             
-            hash[name] = "CASE WHEN #{condition} THEN #{value} ELSE NULL END"
+            hash[quoted] = "CASE WHEN #{condition} THEN #{quoted} ELSE NULL END"
             hash
           end
           
@@ -246,7 +245,7 @@ module Cover
           # group
           
           if options[:group]
-            group = selections.inject([]) { |c, s| c | s.columns }.map { |c| selection_column_name(c) }
+            group = selections.inject([]) { |c, s| c | s.columns }.map { |c| @connection.quote_ident(c.to_s) }
           end
           
           # query
@@ -260,26 +259,6 @@ module Cover
             :intersection_geometry_column => @geometry_column
           )
           
-        end
-        
-        def selection_column_name(selection_column)
-          if Array === selection_column
-            selection_column_name(selection_column[0])
-          elsif Symbol === selection_column
-            @connection.quote_ident(selection_column.to_s)
-          else
-            selection_column
-          end
-        end
-        
-        def selection_column_value(selection_column)
-          if Array === selection_column
-            selection_column[1]
-          elsif Symbol === selection_column
-            @connection.quote_ident(selection_column.to_s)
-          else
-            selection_column
-          end
         end
       
     end

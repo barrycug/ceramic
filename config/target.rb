@@ -4,11 +4,8 @@ class TargetConfig
   
     def write_feature(row, io)
       io << "{"
-      
       io << "\"geometry\":#{row["way"]},"
-      io << "\"id\":#{row["osm_id"].to_i},"
-      io << "\"type\":\"#{row["osm_type"]}\""
-      
+      io << "\"id\":#{row["osm_id"].to_i}"
       io << "}"
     end
   
@@ -17,12 +14,12 @@ class TargetConfig
   def initialize
     
     @target_source = Cover::Source::OSM2PGSQL.new do
-      query :point do
-        select [:osm_id, [:osm_type, "'point'"]], :zoom => "16-"
+      query :point, :simplify => false do
+        select [:osm_id], :zoom => "16-"
       end
       
-      query :line, :polygon do
-        select [[:osm_id, "abs(osm_id)"], [:osm_type, "case when osm_id < 0 then 'relation' else 'way' end"]], :zoom => "16-"
+      query :line, :polygon, :simplify => false, :point => false do
+        select [:osm_id], :zoom => "16-"
       end
     end
     

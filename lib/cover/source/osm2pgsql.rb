@@ -214,7 +214,7 @@ module Cover
           
           geometry = { @geometry_column => geometry_wrap_expressions }
           
-          if table == :polygon
+          if table == :polygon && options[:point] != false
             geometry[:point] = [PostGISQuery::WRAP_POINT, "ST_PointOnSurface(ST_Buffer($, 0))", @geometry_column]
           end
           

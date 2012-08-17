@@ -28,10 +28,10 @@ class SelectionConfig
   
   end
 
-  class CoastlineWriter
+  class LandWriter
     
     def initialize(options = {})
-      @geometry = options[:geometry] || "geom"
+      @geometry = options[:geometry] || "the_geom"
     end
   
     def write_feature(row, io)
@@ -45,16 +45,15 @@ class SelectionConfig
   
   def initialize
     
-    @lz_coastline_source = Cover::Source::Coastline.new("lz_coastlines", :zoom => "0-9", :geometry_column => "geom")
-    
-    @coastline_source = Cover::Source::Coastline.new("coastlines", :zoom => "10-", :geometry_column => "geom")
+    @land_source = Cover::Source::Coastline.new("land_polygons_split", :zoom => "10-")
     
     @osm_source = Cover::Source::OSM2PGSQL.new do
       
-      # highways and railways, adapted from High Road
+      # Highways and railways, adapted from High Road
+      # https://github.com/migurski/HighRoad/
       
       query :line, :geometry => "ST_LineMerge(ST_Collect(way))", :group => true do
-        select [:highway, :name, :ref], :zoom => "9-14", :sql => "highway IN ('motorway')"
+        select [:highway, :name, :ref], :zoom => "10-14", :sql => "highway IN ('motorway')"
         select [:highway, :name, :ref], :zoom => "10-14", :sql => "highway IN ('trunk')"
         select [:highway, :name, :ref], :zoom => "11-14", :sql => "highway IN ('primary', 'secondary')"
         select [:highway, :name, :ref], :zoom => "12-14", :sql => "highway IN ('tertiary', 'trunk_link')"
@@ -75,18 +74,19 @@ class SelectionConfig
         end
       end
       
-      # waterways, adapted from Toner
+      # Waterways, adapted from Toner
+      # https://github.com/Citytracking/toner
       
       query :line do
-        select [:waterway, :name], :zoom => "8-", :sql => "waterway = 'river'"
+        select [:waterway, :name], :zoom => "10-", :sql => "waterway = 'river'"
       end
       
       query :polygon do
         select [:waterway, :name], :zoom => "10-", :sql => "waterway in ('riverbank')"
       
         options :sql => "\"natural\" in ('water', 'bay') or landuse in ('reservoir')" do
-          select [:natural, :waterway, :landuse], :zoom => "8", :sql => "way_area >=  5000000"
-          select [:natural, :waterway, :landuse], :zoom => "9", :sql => "way_area >=  1000000"
+          select [:natural, :waterway, :landuse], :zoom => "10", :sql => "way_area >=  5000000"
+          select [:natural, :waterway, :landuse], :zoom => "10", :sql => "way_area >=  1000000"
           select [:natural, :waterway, :landuse], :zoom => "10", :sql => "way_area >= 500000"
           select [:natural, :waterway, :landuse], :zoom => "11", :sql => "way_area >= 100000"
           select [:natural, :waterway, :landuse], :zoom => "12", :sql => "way_area >= 500000"
@@ -96,29 +96,31 @@ class SelectionConfig
         end
       end
           
-      # places, adapted from osm mapnik styles
+      # Places, adapted from OSM mapnik styles
+      # http://svn.openstreetmap.org/applications/rendering/mapnik/
       
       query :point do
-        select [:place, :name], :sql => "place in ('continent', 'ocean', 'sea')"
-        select [:place, :name], :zoom => "2-", :sql => "place in ('country')"
-        select [:place, :name], :zoom => "4-", :sql => "place in ('state')"
-        select [:place, :name, :capital, :population], :zoom => "6-", :sql => "place in ('city', 'metropolis')"
-        select [:place, :name, :capital, :population], :zoom => "9-", :sql => "place in ('town')"
-        select [:place, :name, :population], :zoom => "9-", :sql => "place in ('large_town', 'small_town')"
+        select [:place, :name], :zoom => "10-", :sql => "place in ('continent', 'ocean', 'sea')"
+        select [:place, :name], :zoom => "10-", :sql => "place in ('country')"
+        select [:place, :name], :zoom => "10-", :sql => "place in ('state')"
+        select [:place, :name, :capital, :population], :zoom => "10-", :sql => "place in ('city', 'metropolis')"
+        select [:place, :name, :capital, :population], :zoom => "10-", :sql => "place in ('town')"
+        select [:place, :name, :population], :zoom => "10-", :sql => "place in ('large_town', 'small_town')"
         select [:place, :name, :population], :zoom => "12-", :sql => "place in ('suburb', 'village', 'large_village')"
         select [:natural, :ele, :name], :zoom => "12-", :sql => "\"natural\" = 'peak'"
       end
       
       query :line do
         options :sql => "boundary = 'administrative'" do
-          select [:boundary, :admin_level], :zoom => "4-", :sql => "admin_level in ('2', '3', '4')"
+          select [:boundary, :admin_level], :zoom => "10-", :sql => "admin_level in ('2', '3', '4')"
           select [:boundary, :admin_level], :zoom => "11-", :sql => "admin_level in ('5', '6')"
           select [:boundary, :admin_level], :zoom => "12-", :sql => "admin_level in ('7', '8')"
           select [:boundary, :admin_level], :zoom => "13-", :sql => "admin_level in ('9', '10')"
         end
       end
           
-      # areas, partially adapted from Toner
+      # Areas, partially adapted from Toner
+      # https://github.com/Citytracking/toner
       
       query :polygon do
         options :sql => "landuse IS NOT NULL" do
@@ -138,7 +140,7 @@ class SelectionConfig
         end
       end
       
-      # high zoom
+      # High zoom stuff
       
       query :point, :polygon do
         select [:amenity, :shop, :name], :zoom => "16-", :sql => "amenity IS NOT NULL OR shop IS NOT NULL"
@@ -156,12 +158,11 @@ class SelectionConfig
     
     
     @osm_writer = OSMWriter.new
-    @coastline_writer = CoastlineWriter.new(:geometry => "geom")
+    @land_writer = LandWriter.new
     
     pairs = []
     
-    # pairs << [@lz_coastline_source, @coastline_writer]
-    pairs << [@coastline_source, @coastline_writer]
+    pairs << [@land_source, @land_writer]
     pairs << [@osm_source, @osm_writer]
     
     @maker = Cover::Maker.new(:scale => 1024, :pairs => pairs)
@@ -171,8 +172,7 @@ class SelectionConfig
   def setup
     @connection = PG.connect(dbname: ENV["DBNAME"] || "gis")
     
-    @lz_coastline_source.connection = @connection
-    @coastline_source.connection = @connection
+    @land_source.connection = @connection
     @osm_source.connection = @connection
   end
   

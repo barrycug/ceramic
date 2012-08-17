@@ -45,7 +45,7 @@ class SelectionConfig
   
   def initialize
     
-    @land_source = Cover::Source::Coastline.new("land_polygons_split", :zoom => "8-")
+    @land_source = Cover::Source::Coastline.new("land_polygons_split", :zoom => "4-")
     
     @osm_source = Cover::Source::OSM2PGSQL.new do
       
@@ -53,7 +53,7 @@ class SelectionConfig
       # https://github.com/migurski/HighRoad/
       
       query :line, :geometry => "ST_LineMerge(ST_Collect(way))", :group => true do
-        select [:highway, :name, :ref], :zoom => "8-14", :sql => "highway IN ('motorway')"
+        select [:highway, :name, :ref], :zoom => "9-14", :sql => "highway IN ('motorway')"
         select [:highway, :name, :ref], :zoom => "10-14", :sql => "highway IN ('trunk')"
         select [:highway, :name, :ref], :zoom => "11-14", :sql => "highway IN ('primary', 'secondary')"
         select [:highway, :name, :ref], :zoom => "12-14", :sql => "highway IN ('tertiary', 'trunk_link')"
@@ -78,7 +78,7 @@ class SelectionConfig
       # https://github.com/Citytracking/toner
       
       query :line do
-        select [:waterway, :name], :zoom => "9-", :sql => "waterway = 'river'"
+        select [:waterway, :name], :zoom => "8-", :sql => "waterway = 'river'"
       end
       
       query :polygon do
@@ -100,19 +100,19 @@ class SelectionConfig
       # http://svn.openstreetmap.org/applications/rendering/mapnik/
       
       query :point do
-        select [:place, :name], :zoom => "8-", :sql => "place in ('continent', 'ocean', 'sea')"
-        select [:place, :name], :zoom => "8-", :sql => "place in ('country')"
-        select [:place, :name], :zoom => "8-", :sql => "place in ('state')"
-        select [:place, :name, :capital, :population], :zoom => "8-", :sql => "place in ('city', 'metropolis')"
+        select [:place, :name], :sql => "place in ('continent', 'ocean', 'sea')"
+        select [:place, :name], :zoom => "2-", :sql => "place in ('country')"
+        select [:place, :name], :zoom => "4-", :sql => "place in ('state')"
+        select [:place, :name, :capital, :population], :zoom => "6-", :sql => "place in ('city', 'metropolis')"
         select [:place, :name, :capital, :population], :zoom => "9-", :sql => "place in ('town')"
-        select [:place, :name, :population], :zoom => "10-", :sql => "place in ('large_town', 'small_town')"
+        select [:place, :name, :population], :zoom => "9-", :sql => "place in ('large_town', 'small_town')"
         select [:place, :name, :population], :zoom => "12-", :sql => "place in ('suburb', 'village', 'large_village')"
         select [:natural, :ele, :name], :zoom => "12-", :sql => "\"natural\" = 'peak'"
       end
       
       query :line do
         options :sql => "boundary = 'administrative'" do
-          select [:boundary, :admin_level], :zoom => "8-", :sql => "admin_level in ('2', '3', '4')"
+          select [:boundary, :admin_level], :zoom => "4-", :sql => "admin_level in ('2', '3', '4')"
           select [:boundary, :admin_level], :zoom => "11-", :sql => "admin_level in ('5', '6')"
           select [:boundary, :admin_level], :zoom => "12-", :sql => "admin_level in ('7', '8')"
           select [:boundary, :admin_level], :zoom => "13-", :sql => "admin_level in ('9', '10')"

@@ -141,7 +141,7 @@ class SelectionConfig
     
     @osm_writer = OSMWriter.new
     
-    @maker = Cover::Maker.new(:scale => 1024, :pairs => [@osm_source, @osm_writer])
+    @maker = Cover::Maker.new(:scale => 1024, :pairs => [[@osm_source, @osm_writer]])
     
   end
   

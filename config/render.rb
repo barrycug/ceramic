@@ -27,25 +27,8 @@ class SelectionConfig
     end
   
   end
-
-  class LandWriter
-    
-    def initialize(options = {})
-      @geometry = options[:geometry] || "the_geom"
-    end
-  
-    def write_feature(row, io)
-      io << "{"
-      io << "\"type\":\"coastline\","
-      io << "\"geometry\":#{row[@geometry]}"
-      io << "}"
-    end
-  
-  end
   
   def initialize
-    
-    @land_source = Cover::Source::Coastline.new("land_polygons_split", :zoom => "4-")
     
     @osm_source = Cover::Source::OSM2PGSQL.new do
       
@@ -156,23 +139,15 @@ class SelectionConfig
       
     end
     
-    
     @osm_writer = OSMWriter.new
-    @land_writer = LandWriter.new
     
-    pairs = []
-    
-    pairs << [@land_source, @land_writer]
-    pairs << [@osm_source, @osm_writer]
-    
-    @maker = Cover::Maker.new(:scale => 1024, :pairs => pairs)
+    @maker = Cover::Maker.new(:scale => 1024, :pairs => [@osm_source, @osm_writer])
     
   end
   
   def setup
     @connection = PG.connect(dbname: ENV["DBNAME"] || "gis")
     
-    @land_source.connection = @connection
     @osm_source.connection = @connection
   end
   

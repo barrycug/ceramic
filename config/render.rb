@@ -1,6 +1,6 @@
 require "json"
 
-class SelectionConfig
+class RenderConfig
 
   class OSMWriter
   
@@ -161,4 +161,4 @@ class SelectionConfig
   
 end
 
-Cover.config = SelectionConfig.new
+Cover.config = RenderConfig.new

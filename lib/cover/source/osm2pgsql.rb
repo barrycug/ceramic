@@ -111,6 +111,51 @@ module Cover
           end
   
       end
+  
+      WRAP_POINT = <<-END
+ST_TransScale(
+  $,
+  -:left, -:top, :scale / :width, -:scale / :height
+)
+END
+  
+      WRAP_LINE = <<-END
+ST_TransScale(
+  ST_Intersection(
+    $,
+    ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)
+  ),
+  -:left, -:top, :scale / :width, -:scale / :height
+)
+END
+  
+      WRAP_LINE_WHOLE = <<-END
+ST_TransScale(
+  $,
+  -:left, -:top, :scale / :width, -:scale / :height
+)
+END
+  
+      WRAP_POLYGON = <<-END
+ST_TransScale(
+  ST_ForceRHR(
+    ST_Intersection(
+      ST_Buffer($, 0),
+      ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)
+    )
+  ),
+  -:left, -:top, :scale / :width, -:scale / :height
+)
+END
+  
+      WRAP_POLYGON_WHOLE = <<-END
+ST_TransScale(
+  ST_ForceRHR(
+    $
+  ),
+  -:left, -:top, :scale / :width, -:scale / :height
+)
+END
       
       attr_accessor :connection
       
@@ -205,17 +250,25 @@ module Cover
           
           case table
           when :point
-            geometry_wrap_expressions.unshift(PostGISQuery::WRAP_POINT)
+            geometry_wrap_expressions.unshift(WRAP_POINT)
           when :line
-            geometry_wrap_expressions.unshift(PostGISQuery::WRAP_LINE)
+            if options[:intersection] == false
+              geometry_wrap_expressions.unshift(WRAP_LINE_WHOLE)
+            else
+              geometry_wrap_expressions.unshift(WRAP_LINE)
+            end
           when :polygon
-            geometry_wrap_expressions.unshift(PostGISQuery::WRAP_POLYGON)
+            if options[:intersection] == false
+              geometry_wrap_expressions.unshift(WRAP_POLYGON_WHOLE)
+            else
+              geometry_wrap_expressions.unshift(WRAP_POLYGON)
+            end
           end
           
           geometry = { @geometry_column => geometry_wrap_expressions }
           
           if table == :polygon && options[:point] != false
-            geometry[:point] = [PostGISQuery::WRAP_POINT, "ST_PointOnSurface(ST_Buffer($, 0))", @geometry_column]
+            geometry[:point] = [WRAP_POINT, "ST_PointOnSurface(ST_Buffer($, 0))", @geometry_column]
           end
           
           # columns

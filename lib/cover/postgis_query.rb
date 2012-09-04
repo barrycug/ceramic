@@ -16,35 +16,6 @@ module Cover
 
       [result, numbered]
     end
-  
-    WRAP_POINT = <<-END
-ST_TransScale(
-  $,
-  -:left, -:top, :scale / :width, -:scale / :height
-)
-END
-  
-    WRAP_LINE = <<-END
-ST_TransScale(
-  ST_Intersection(
-    $,
-    ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)
-  ),
-  -:left, -:top, :scale / :width, -:scale / :height
-)
-END
-  
-    WRAP_POLYGON = <<-END
-ST_TransScale(
-  ST_ForceRHR(
-    ST_Intersection(
-      ST_Buffer($, 0),
-      ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)
-    )
-  ),
-  -:left, -:top, :scale / :width, -:scale / :height
-)
-END
 
     # :table -- name of table to query
     # :columns -- hash, keys are column names, values are sql expressions

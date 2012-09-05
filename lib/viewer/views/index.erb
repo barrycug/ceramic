@@ -21,6 +21,7 @@
     <div id="map"></div>
     
     <script src="/leaflet/leaflet.js"></script>
+    <script src="/leaflet-hash.js"></script>
     <script src="/debug_render.js"></script>
     <script src="/canvas_debug_layer.js"></script>
     <script src="/kothic.js"></script>
@@ -43,45 +44,12 @@
         options.center = new L.LatLng(0, 0);
       <% end %>
       
-      var center = window.location.hash.slice(1).match(/(\d+)\/(\-?\d+(?:\.\d+)?)\/(\-?\d+(?:\.\d+)?)/);
-        
-      if (center) {
-        options.center = new L.LatLng(parseFloat(center[2]), parseFloat(center[3]));
-        options.zoom = parseInt(center[1]);
-      }
-      
       
       // Set up the map
       
       var map = new L.Map("map", options);
       
-      map.on("moveend", function() {
-        window.location.hash = [map.getZoom(), map.getCenter().lat, map.getCenter().lng].join("/");
-      });
-      
-      map.on("zoomend", function() {
-        window.location.hash = [map.getZoom(), map.getCenter().lat, map.getCenter().lng].join("/");
-      });
-      
-      
-      // Listen to hash changes
-      
-      function handleHashChange() {
-        
-        var center;
-        
-        if (center = window.location.hash.slice(1).match(/(\d+)\/(\-?\d+(?:\.\d+)?)\/(\-?\d+(?:\.\d+)?)/)) {
-          map.panTo(new L.LatLng(parseFloat(center[2]), parseFloat(center[3])));
-          map.setZoom(parseInt(center[1]));
-        }
-        
-      }
-      
-      window.addEventListener("hashchange", function() {
-        
-        handleHashChange();
-        
-      });
+      new L.Hash(map);
       
       
       // Inspect popup

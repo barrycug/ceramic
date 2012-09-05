@@ -29,6 +29,7 @@ module Cover
     get "/:z/:x/:y" do
       
       content_type :js
+      headers "Access-Control-Allow-Origin" => "*"
       
       fetch_tile(params)
       

@@ -58,8 +58,8 @@ module Cover
         protected
   
           def validate_columns(columns)
-            unless Array === columns
-              raise ArgumentError, "columns must be an array"
+            unless Array === columns || Hash === columns
+              raise ArgumentError, "columns must be an array or hash"
             end
           end
     
@@ -274,19 +274,38 @@ END
           # columns
           
           column_conditions = Hash.new { |hash, key| hash[key] = [] }
+          column_expressions = {}
           
           selections.each do |selection|
-            selection.columns.each do |column|
-              column_conditions[column] << (["TRUE"] + (selection.options[:sql] || [])).join(" AND ")
+            
+            if Hash === selection.columns
+              
+              selection.columns.each do |column, expression|
+                column_conditions[column] << (["TRUE"] + (selection.options[:sql] || [])).join(" AND ")
+                column_expressions[column] = expression
+              end
+              
+            elsif Array === selection.columns
+              
+              selection.columns.each do |column|
+                column_conditions[column] << (["TRUE"] + (selection.options[:sql] || [])).join(" AND ")
+                column_expressions[column] = @connection.quote_ident(column.to_s)
+              end
+              
             end
+            
           end
           
           columns = column_conditions.inject({}) do |hash, (column, conditions)|
-            quoted = @connection.quote_ident(column.to_s)
+            
+            name = column
+            expression = column_expressions[column]
+            
             condition = conditions.map { |c| "(#{c})" }.join(" OR ")
             
-            hash[quoted] = "CASE WHEN #{condition} THEN #{quoted} ELSE NULL END"
+            hash[name] = "CASE WHEN #{condition} THEN #{expression} ELSE NULL END"
             hash
+            
           end
           
           # conditions

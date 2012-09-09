@@ -8,6 +8,11 @@ class BuildingsConfig
       io << "{"
       io << "\"geometry\":#{row["way"]},"
       io << "\"id\":#{row["osm_id"].to_i}"
+      
+      unless row["height"].nil?
+        io << ",\"height\":#{row["height"].to_json}"
+      end
+      
       io << "}"
     end
   
@@ -18,7 +23,7 @@ class BuildingsConfig
     @source = Cover::Source::OSM2PGSQL.new do
       query :polygon, :simplify => false, :intersection => false do
         options :zoom => "14-", :sql => "building IS NOT NULL AND building <> 'no'" do
-          select [:osm_id]
+          select({ :osm_id => :osm_id, :height => "tags -> 'height'" })
         end
       end
     end

@@ -58,8 +58,8 @@ module Cover
         protected
   
           def validate_columns(columns)
-            unless Array === columns || Hash === columns
-              raise ArgumentError, "columns must be an array or hash"
+            unless Array === columns
+              raise ArgumentError, "columns must be an array"
             end
           end
     
@@ -277,20 +277,17 @@ END
           column_expressions = {}
           
           selections.each do |selection|
-            
-            if Hash === selection.columns
               
-              selection.columns.each do |column, expression|
-                column_conditions[column] << (["TRUE"] + (selection.options[:sql] || [])).join(" AND ")
-                column_expressions[column] = expression
+            selection.columns.each do |column|
+              
+              if Array === column
+                column, expression = *column
+              else
+                expression = @connection.quote_ident(column.to_s)
               end
               
-            elsif Array === selection.columns
-              
-              selection.columns.each do |column|
-                column_conditions[column] << (["TRUE"] + (selection.options[:sql] || [])).join(" AND ")
-                column_expressions[column] = @connection.quote_ident(column.to_s)
-              end
+              column_conditions[column] << (["TRUE"] + (selection.options[:sql] || [])).join(" AND ")
+              column_expressions[column] = expression
               
             end
             
@@ -300,7 +297,6 @@ END
             
             name = column
             expression = column_expressions[column]
-            
             condition = conditions.map { |c| "(#{c})" }.join(" OR ")
             
             hash[name] = "CASE WHEN #{condition} THEN #{expression} ELSE NULL END"

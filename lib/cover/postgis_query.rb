@@ -22,6 +22,7 @@ module Cover
     # :geometry -- hash, keys are column names, values are arrays of wrap expressions
     # :group -- if present, an array of column names to include in group by clause
     # :conditions -- sql conditions besides intersection
+    # :order -- sql ORDER BY expression
     # :intersection_geometry_column -- column to use for intersection
   
     def initialize(options = {})
@@ -58,6 +59,7 @@ module Cover
         table << "FROM #{inner_table} "
         table << "WHERE #{inner_conditions} "
         table << "GROUP BY #{inner_group} " if @options[:group]
+        table << "ORDER BY #{inner_order} " if @options[:order]
         table
       end
     
@@ -103,6 +105,10 @@ module Cover
         else
           @options[:group].map { |column| quote_identifier(column) }.join(", ")
         end
+      end
+      
+      def inner_order
+        @options[:order]
       end
     
       def quote_identifier(name)

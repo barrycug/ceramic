@@ -326,6 +326,10 @@ END
             group = selections.inject([]) { |c, s| c | s.columns }.map { |c| @connection.quote_ident(c.to_s) }
           end
           
+          # order
+          
+          order = options[:order]
+          
           # query
           
           PostGISQuery.new(
@@ -334,6 +338,7 @@ END
             :geometry => geometry,
             :conditions => conditions,
             :group => group,
+            :order => order,
             :intersection_geometry_column => @geometry_column
           )
           

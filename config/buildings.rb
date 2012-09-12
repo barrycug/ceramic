@@ -9,7 +9,7 @@ class BuildingsConfig
       io << "\"geometry\":#{row["way"]},"
       io << "\"id\":#{row["osm_id"].to_i}"
       
-      unless row["height"].nil?
+      if row.has_key?("height")
         io << ",\"height\":#{row["height"].to_json}"
       end
       

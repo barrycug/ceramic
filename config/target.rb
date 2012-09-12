@@ -14,15 +14,15 @@ class TargetConfig
   def initialize
     
     @target_source = Cover::Source::OSM2PGSQL.new(:margin => 0.05) do
-      query :point do
-        select [:osm_id], :zoom => "15-"
-      end
-      
-      query :polygon, :simplify => false, :point => false do
-        select [:osm_id], :zoom => "15-"
+      query :polygon, :simplify => false, :point => false, :order => "way_area DESC" do
+        select [:osm_id], :zoom => "15-", :conditions => "way_area < 10000000"
       end
       
       query :line, :simplify => false, :point => false do
+        select [:osm_id], :zoom => "15-"
+      end
+      
+      query :point do
         select [:osm_id], :zoom => "15-"
       end
     end

@@ -22,7 +22,7 @@ class BuildingsConfig
     
     @source = Cover::Source::OSM2PGSQL.new do
       query :polygon, :simplify => false, :intersection => false do
-        options :zoom => "14-", :sql => "building IS NOT NULL AND building <> 'no'" do
+        options :zoom => "14-", :conditions => "building IS NOT NULL AND building <> 'no'" do
           select [:osm_id, [:height, "tags -> 'height'"]]
         end
       end

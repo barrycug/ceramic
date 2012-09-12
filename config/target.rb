@@ -19,7 +19,7 @@ class TargetConfig
       end
       
       query :polygon, :simplify => false, :point => false do
-        select [:osm_id], :zoom => "15-", :sql => "building is not null"
+        select [:osm_id], :zoom => "15-"
       end
       
       query :line, :simplify => false, :point => false do

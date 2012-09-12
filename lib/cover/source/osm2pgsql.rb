@@ -78,8 +78,8 @@ module Cover
             case key
             when :zoom
               merge_zoom(outer, inner)
-            when :sql
-              merge_sql(outer, inner)
+            when :conditions
+              merge_conditions(outer, inner)
             else
               raise ArgumentError, "unknown option #{key}"
             end
@@ -102,7 +102,7 @@ module Cover
             end
           end
     
-          def merge_sql(outer, inner)
+          def merge_conditions(outer, inner)
             if outer.nil?
               [inner]
             else
@@ -296,7 +296,7 @@ END
                 expression = @connection.quote_ident(column.to_s)
               end
               
-              column_conditions[column] << (["TRUE"] + (selection.options[:sql] || [])).join(" AND ")
+              column_conditions[column] << (["TRUE"] + (selection.options[:conditions] || [])).join(" AND ")
               column_expressions[column] = expression
               
             end
@@ -317,7 +317,7 @@ END
           # conditions
           
           conditions = (["FALSE"] + selections.map do |selection|
-            "(" + (["TRUE"] + (selection.options[:sql] || [])).join(" AND ") + ")"
+            "(" + (["TRUE"] + (selection.options[:conditions] || [])).join(" AND ") + ")"
           end).join(" OR ")
           
           # group

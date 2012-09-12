@@ -13,13 +13,17 @@ class TargetConfig
   
   def initialize
     
-    @target_source = Cover::Source::OSM2PGSQL.new do
-      query :point, :simplify => false do
-        select [:osm_id], :zoom => "16-"
+    @target_source = Cover::Source::OSM2PGSQL.new(:margin => 0.05) do
+      query :point do
+        select [:osm_id], :zoom => "15-"
       end
       
-      query :line, :polygon, :simplify => false, :point => false do
-        select [:osm_id], :zoom => "16-"
+      query :polygon, :simplify => false, :point => false do
+        select [:osm_id], :zoom => "15-", :sql => "building is not null"
+      end
+      
+      query :line, :simplify => false, :point => false do
+        select [:osm_id], :zoom => "15-"
       end
     end
     

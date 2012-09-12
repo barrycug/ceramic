@@ -115,7 +115,7 @@ module Cover
       WRAP_POINT = <<-END
 ST_TransScale(
   $,
-  -:left, -:top, :scale / :width, -:scale / :height
+  -:viewbox_left, -:viewbox_top, :scale / :viewbox_width, -:scale / :viewbox_height
 )
 END
   
@@ -125,14 +125,14 @@ ST_TransScale(
     $,
     ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)
   ),
-  -:left, -:top, :scale / :width, -:scale / :height
+  -:viewbox_left, -:viewbox_top, :scale / :viewbox_width, -:scale / :viewbox_height
 )
 END
   
       WRAP_LINE_WHOLE = <<-END
 ST_TransScale(
   $,
-  -:left, -:top, :scale / :width, -:scale / :height
+  -:viewbox_left, -:viewbox_top, :scale / :viewbox_width, -:scale / :viewbox_height
 )
 END
   
@@ -144,7 +144,7 @@ ST_TransScale(
       ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)
     )
   ),
-  -:left, -:top, :scale / :width, -:scale / :height
+  -:viewbox_left, -:viewbox_top, :scale / :viewbox_width, -:scale / :viewbox_height
 )
 END
   
@@ -153,7 +153,7 @@ ST_TransScale(
   ST_ForceRHR(
     $
   ),
-  -:left, -:top, :scale / :width, -:scale / :height
+  -:viewbox_left, -:viewbox_top, :scale / :viewbox_width, -:scale / :viewbox_height
 )
 END
       
@@ -164,6 +164,7 @@ END
         @table_prefix = options[:prefix] || "planet_osm"
         @geometry_column = options[:geometry_column] || "way"
         @geometry_srid = options[:geometry_srid] || 900913
+        @margin = options[:margin] || 0
         
         @queries = QueryCollector.collect_queries(&block)
         
@@ -177,12 +178,21 @@ END
         
         parameters = {
           "scale" => [scale.to_f, "float"],
-          "left" => [bounds.left, "float"],
-          "top" => [bounds.top, "float"],
-          "bottom" => [bounds.bottom, "float"],
-          "right" => [bounds.right, "float"],
-          "width" => [bounds.width, "float"],
-          "height" => [bounds.height, "float"],
+          
+          "viewbox_left" => [bounds.left, "float"],
+          "viewbox_top" => [bounds.top, "float"],
+          "viewbox_bottom" => [bounds.bottom, "float"],
+          "viewbox_right" => [bounds.right, "float"],
+          "viewbox_width" => [bounds.width, "float"],
+          "viewbox_height" => [bounds.height, "float"],
+          
+          "left" => [bounds.left - (bounds.width * @margin), "float"],
+          "top" => [bounds.top + (bounds.height * @margin), "float"],
+          "bottom" => [bounds.bottom - (bounds.height * @margin), "float"],
+          "right" => [bounds.right + (bounds.height * @margin), "float"],
+          "width" => [bounds.width + (bounds.width * @margin * 2), "float"],
+          "height" => [bounds.height + (bounds.height * @margin * 2), "float"],
+          
           "unit" => [bounds.width / scale.to_f, "float"],
           "srid" => [@geometry_srid, "int"]
         }

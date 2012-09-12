@@ -10,7 +10,7 @@
   <body>
     
     <article>
-      <canvas id="debug" width="512" height="512"></canvas>
+      <canvas id="debug" width="576" height="576"></canvas>
       <canvas id="kothic" width="512" height="512"></canvas>
     </article>
     
@@ -42,7 +42,15 @@
         canvas = document.getElementById("debug");
         context = canvas.getContext("2d");
       
-        DebugRender.renderTile(canvas, data);
+        DebugRender.renderTile(canvas, data, 32);
+        
+        // draw inset
+        
+        context.beginPath();
+        
+        context.strokeStyle = "rgba(0, 0, 0, 0.2)";
+        context.strokeRect(32 - 0.5, 32 - 0.5, canvas.width - 64, canvas.height - 64);
+        
       
         // draw grid
       

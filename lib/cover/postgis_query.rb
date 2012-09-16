@@ -123,7 +123,7 @@ module Cover
         if wrap_expressions.size == 1
           quote_identifier(wrap_expressions.first)
         elsif wrap_expressions.first.include?("$")
-          wrap_expressions.first.sub("$", compose_wrap_expressions(wrap_expressions[1..-1]))
+          wrap_expressions.first.gsub("$", compose_wrap_expressions(wrap_expressions[1..-1]))
         else
           quote_identifier(wrap_expressions.first)
         end

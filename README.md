@@ -33,7 +33,7 @@ A valid feature object may omit the "geometry" object and may include other memb
 
 Geometry objects are similar to GeoJSON geometry objects, but use a local coordinate system similar to HTML Canvas. The origin is at the top-left, with x values extending to the right and y values extending to the bottom. The scale member of the data tile object defines the tile's scale: coordinate values are given relative to this value.
 
-Vertices in polygon geometry objects must be ordered using the [right-hand rule][http://postgis.org/docs/ST_ForceRHR.html].
+Vertices in polygon geometry objects must be ordered using the [right-hand rule](http://postgis.org/docs/ST_ForceRHR.html).
 
 Features' geometries may be clipped to the bounds of the tile. If a feature has more than one part intersecting with the tile, the "multi" version of its geometry should be used to avoid repeating the feature's tags.
 

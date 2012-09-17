@@ -39,21 +39,23 @@ Features' geometries may be clipped to the bounds of the tile. If a feature has 
 Configuration files
 -------------------
 
-Configuration files define what data is in a tileset. The library includes two sample configuration files in `config/`.
-
 * `config/render.rb`
 
-  This configuration includes roads, waterways, places, some types of areas, and buildings from OpenStreetMap. At higher zoom levels, it includes all highway features, amenities, shops, and so on.
+  This configuration includes roads, waterways, places, some types of areas, and buildings from OpenStreetMap. At higher zoom levels, it includes all highway features, amenities, shops, etc.
 
 * `config/target.rb`
 
-  This configuration includes just IDs and geometry for all OpenStreetMap data at zoom levels 16 and above.
+  This configuration includes OSM ids and geometry for all OpenStreetMap data at zoom levels 15 and above, filtering out very large polygons by area.
+
+* `config/buildings.rb`
+
+  This configuration includes OSM ids, heights, and geometry for buildings at zoom levels 16 and above.
 
 
 Scripts
 -------
 
-For any script, <indices> may be a space-separated list of z/x/y tile indices, or a file containing a list of indices. The bench/ directory includes a few sample index lists.
+For any script, `<indices>` may be a space-separated list of z/x/y tile indices, or a file containing a list of indices. The bench/ directory includes a few sample index lists.
 
 * `script/debug --config <config> [--center <lat>,<lon>,<zoom>] [--host <host>] [--port <port>]`
   
@@ -79,11 +81,11 @@ For any script, <indices> may be a space-separated list of z/x/y tile indices, o
 Tile server notes
 -----------------
 
-- mod_tile must be configured for JSON tiles using the AddTileMimeConfig directive:
+- mod_tile must be configured for JSON tiles using the `AddTileMimeConfig` directive:
 
   `AddTileMimeConfig /render/ render js`
 
-- Individual tiles are saved gzipped, so the Content-Encoding header must be set for clients to interpret responses:
+- Individual tiles are saved gzipped, so the `Content-Encoding` header must be set for clients to interpret responses:
 
   `<Location /render>
     Header set Content-Encoding gzip

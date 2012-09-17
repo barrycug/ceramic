@@ -20,9 +20,9 @@ class BuildingsConfig
   
   def initialize
     
-    @source = Cover::Source::OSM2PGSQL.new do
-      query :polygon, :simplify => false, :intersection => false do
-        options :zoom => "14-", :conditions => "building IS NOT NULL AND building <> 'no'" do
+    @source = Cover::Source::OSM2PGSQL.new(:margin => 0.05) do
+      query :polygon, :intersection => false do
+        options :zoom => "16-", :conditions => "building IS NOT NULL AND building <> 'no'" do
           select [:osm_id, [:height, "tags -> 'height'"]]
         end
       end

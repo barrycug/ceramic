@@ -112,14 +112,14 @@ module Cover
   
       end
   
-      WRAP_POINT = <<-SQL
+      WRAP_POINT = <<-END
 ST_TransScale(
   $,
   -:viewbox_left, -:viewbox_top, :scale / :viewbox_width, -:scale / :viewbox_height
 )
-SQL
+END
   
-      WRAP_LINE = <<-SQL
+      WRAP_LINE = <<-END
 ST_TransScale(
   ST_Intersection(
     $,
@@ -127,16 +127,16 @@ ST_TransScale(
   ),
   -:viewbox_left, -:viewbox_top, :scale / :viewbox_width, -:scale / :viewbox_height
 )
-SQL
+END
   
-      WRAP_LINE_WHOLE = <<-SQL
+      WRAP_LINE_WHOLE = <<-END
 ST_TransScale(
   $,
   -:viewbox_left, -:viewbox_top, :scale / :viewbox_width, -:scale / :viewbox_height
 )
-SQL
+END
   
-      WRAP_POLYGON = <<-SQL
+      WRAP_POLYGON = <<-END
 ST_TransScale(
   ST_ForceRHR(
     ST_Intersection(
@@ -146,25 +146,16 @@ ST_TransScale(
   ),
   -:viewbox_left, -:viewbox_top, :scale / :viewbox_width, -:scale / :viewbox_height
 )
-SQL
+END
   
-      WRAP_POLYGON_WHOLE = <<-SQL
+      WRAP_POLYGON_WHOLE = <<-END
 ST_TransScale(
   ST_ForceRHR(
     $
   ),
   -:viewbox_left, -:viewbox_top, :scale / :viewbox_width, -:scale / :viewbox_height
 )
-SQL
-
-      WRAP_COVER_POLYGON_CASE = <<-SQL
-CASE
-  WHEN ST_Covers($, ST_MakeEnvelope(:left, :top, :right, :bottom, :srid))
-    THEN ST_MakeEnvelope(:left, :top, :right, :bottom, :srid)
-  ELSE
-    $
 END
-SQL
       
       attr_accessor :connection
       
@@ -259,10 +250,6 @@ SQL
             geometry_wrap_expressions = [options[:geometry]]
           else
             geometry_wrap_expressions = [@geometry_column]
-          end
-          
-          if options[:cover] != false
-            geometry_wrap_expressions.unshift(WRAP_COVER_POLYGON_CASE)
           end
           
           if Numeric === options[:simplify]

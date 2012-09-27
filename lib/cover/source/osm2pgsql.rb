@@ -194,6 +194,7 @@ END
           "height" => [bounds.height + (bounds.height * @margin * 2), "float"],
           
           "unit" => [bounds.width / scale.to_f, "float"],
+          "area" => [bounds.width * bounds.height, "float"],
           "srid" => [@geometry_srid, "int"]
         }
         

@@ -1,9 +1,7 @@
 Cover
 =====
 
-This is a library for building JSON map data tiles.
-
-One use of map data tiles is client-side rendering. [An example map is available](http://data-tiles.mdaines.com/).
+This is a library for building JSON vector map tiles.
 
 
 Requirements

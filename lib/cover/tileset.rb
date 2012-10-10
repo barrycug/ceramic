@@ -65,11 +65,13 @@ module Cover
       first = true
     
       sources.each do |source|
+        
         source.query(index) do |feature|
-          "," unless first
+          io << "," unless first
           writer.write(feature, io)
           first = false
         end
+        
       end
     
       io << "]"

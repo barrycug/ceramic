@@ -7,7 +7,7 @@ class TestTilesetBuild < Test::Unit::TestCase
   def setup
     @tileset = Cover::Tileset.build do
       scale 256
-      source(:proc) { |index| [ { "id" => 42 } ] }
+      source(:proc) { |index| [ { "id" => 42 }, { "id" => 13 } ] }
     end
   end
   
@@ -27,8 +27,9 @@ class TestTilesetBuild < Test::Unit::TestCase
     result = JSON.parse(str.string)
     
     assert_equal 256, result["scale"]
-    assert_equal 1, result["features"].size
+    assert_equal 2, result["features"].size
     assert_equal 42, result["features"][0]["id"]
+    assert_equal 13, result["features"][1]["id"]
   end
   
 end

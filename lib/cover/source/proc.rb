@@ -4,16 +4,6 @@ module Cover
     
     class Proc
   
-      class << self
-    
-        def build(options = {}, &block)
-          instance = self.new
-          instance.query = block if block_given?
-          instance
-        end
-  
-      end
-  
       attr_accessor :query
   
       def initialize

@@ -2,35 +2,10 @@ module Cover
   
   class Tileset
   
-    class TilesetBuilder
-    
-      def initialize(options = {})
-        @tileset = Tileset.new
-      end
-    
-      def scale(value)
-        @tileset.scale = value
-      end
-    
-      def source(type, options = {}, &block)
-        klass = case type
-        when :proc
-          Source::Proc
-        else
-          raise ArgumentError, "Unknown source type #{type.inspect}"
-        end
-      
-        @tileset.sources << klass.build(options, &block)
-      end
-    
-    end
-  
     class << self
     
       def build(options = {}, &block)
-        builder = TilesetBuilder.new(options)
-        builder.instance_exec(&block)
-        builder.instance_variable_get(:@tileset)
+        Builder::TilesetBuilder.build(options, &block)
       end
     
     end

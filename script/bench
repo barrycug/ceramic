@@ -16,11 +16,7 @@ options = Trollop::options do
   opt :"metatile-size", "Metatile size", :type => :integer, :default => 8
 end
 
-begin
-  config = Cover::Util.load_config(options[:config])
-rescue ArgumentError
-  Trollop::die "couldn't load config file #{options[:config]}"
-end
+tileset = eval "Cover::Tileset.build { #{File.read(options[:config])} }"
 
 begin
   tile_indices = Cover::Util.load_tile_indices(options[:tile]) if options[:tile]
@@ -36,7 +32,7 @@ end
 
 # Benchmarking
 
-config.setup if config.respond_to?(:setup)
+tileset.setup
 
 # Tiles
 
@@ -55,7 +51,7 @@ if tile_indices
   
     start = Time.now
   
-    config.maker.write_tile(tile_index, io)
+    tileset.write(tile_index, io)
   
     time = Time.now - start
     size = io.string.bytesize
@@ -96,7 +92,7 @@ if metatile_indices
   
     start = Time.now
   
-    config.maker.write_metatile(tile_index, io, :size => options[:"metatile-size"])
+    tileset.write_metatile(tile_index, io, :size => options[:"metatile-size"])
   
     time = Time.now - start
     size = io.string.bytesize
@@ -114,4 +110,4 @@ if metatile_indices
   
 end
 
-config.teardown if config.respond_to?(:teardown)
+tileset.teardown

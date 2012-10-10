@@ -1,6 +1,6 @@
 module Cover
   
-  class TileIndex
+  class Index
     
     EXTENT = 2 * Math::PI * 6378137
     ORIGIN = -(EXTENT / 2.0)

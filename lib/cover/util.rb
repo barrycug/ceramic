@@ -45,10 +45,10 @@ module Cover
         if File.exist?(string)
           File.open(string, "r").each_line do |line|
             next if line =~ /^#/ || line =~ /^\s*$/
-            indices << Cover::TileIndex.new(line)
+            indices << Cover::Index.new(line)
           end
         else
-          indices << Cover::TileIndex.new(string)
+          indices << Cover::Index.new(string)
         end
         indices
       end

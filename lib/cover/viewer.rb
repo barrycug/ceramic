@@ -14,7 +14,7 @@ module Cover
     
       super()
       
-      @maker = options[:maker]
+      @tileset = options[:tileset]
 
       if options[:center] =~ /(\-?\d+(?:\.\d+)?),(\-?\d+(?:\.\d+)?),(\d+)/
         @center = [$1, $2, $3]
@@ -52,10 +52,10 @@ module Cover
     protected
     
       def fetch_tile(params)
-        tile_index = Cover::TileIndex.new(params[:z].to_i, params[:x].to_i, params[:y].to_i)
+        tile_index = Cover::Index.new(params[:z].to_i, params[:x].to_i, params[:y].to_i)
         
         io = StringIO.new("")
-        @maker.write_tile(tile_index, io)
+        @tileset.write(tile_index, io)
         io.string
       end
   

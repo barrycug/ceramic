@@ -1,16 +1,18 @@
 scale 1024
-  
-source :postgis do
-  
-  query <<-SQL, :geometry_column => "way", :zoom => "16-", :intersection => false, :margin => 0.05
-SELECT
+margin 0.05
+
+source :postgis, :connection_info => { :dbname => "bc" } do
+
+  table <<-SQL, :geometry_column => "way", :geometry_srid => 900913, :zoom => "16-"
+(SELECT
   osm_id,
   way,
+  building,
   tags -> 'height' AS height
 FROM
   planet_osm_polygon
 WHERE
-  building IS NOT NULL AND building <> 'no'
+  building IS NOT NULL AND building <> 'no') AS buildings
 SQL
-    
+
 end

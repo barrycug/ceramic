@@ -1,9 +1,10 @@
 scale 1024
+margin 0.05
   
-source :postgis do
+source :postgis, :connection_info => { :dbname => "bc" } do
   
-  table "planet_osm_polygon", :geometry_column => "way", :zoom => "15-", :margin => 0.05
-  table "planet_osm_line", :geometry_column => "way", :zoom => "15-", :margin => 0.05
-  table "planet_osm_point", :geometry_column => "way", :zoom => "15-", :margin => 0.05
+  table "planet_osm_polygon", :zoom => "15-"
+  table "planet_osm_line", :zoom => "15-"
+  table "planet_osm_point", :zoom => "15-"
   
 end

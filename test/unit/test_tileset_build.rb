@@ -1,4 +1,4 @@
-require File.expand_path('../helper', __FILE__)
+require File.expand_path("./helper", File.dirname(__FILE__))
 require "json"
 require "stringio"
 
@@ -16,7 +16,10 @@ class TestTilesetBuild < Test::Unit::TestCase
   end
   
   def test_query_source
-    result = @tileset.sources.first.query(Cover::Index.new(1, 1, 1))
+    result = []
+    @tileset.sources.first.query(Cover::Index.new(1, 1, 1)) do |feature|
+      result << feature
+    end
     
     assert_equal 42, result[0]["id"]
   end

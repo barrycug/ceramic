@@ -1,4 +1,4 @@
-libdir = File.dirname(__FILE__) + "/../lib"
+libdir = File.dirname(__FILE__) + "/../../lib"
 $LOAD_PATH.unshift libdir unless $LOAD_PATH.include?(libdir)
 
 require "stringio"
@@ -27,7 +27,7 @@ tileset = Cover::Tileset.build do
   scale 1024
   
   source :postgis, :connection_info => { :dbname => DBNAME } do
-    table "(SELECT tags -> 'type' AS type, * FROM planet_osm_polygon) polygons", :geometry_column => "way", :geometry_srid => 3857
+    table "(SELECT osm_id, way, tags -> 'wood' AS wood FROM planet_osm_polygon) polygons", :geometry_column => "way", :geometry_srid => 3857
     table "planet_osm_line", :geometry_column => "way", :geometry_srid => 3857
     table "planet_osm_point", :geometry_column => "way", :geometry_srid => 3857
   end
@@ -39,7 +39,7 @@ end
 
 tileset.setup
 
-index = Cover::Index.new(8, 128, 128)
+index = Cover::Index.new(8, 128, 127)
 str = StringIO.new("")
 tileset.write(index, str)
 

@@ -52,7 +52,7 @@
     <member type="way" ref="3" role="inner"/>
     <tag k="name" v="Test Forest"/>
     <tag k="natural" v="wood"/>
-    <tag k="type" v="evergreen"/>
+    <tag k="wood" v="coniferous"/>
     <tag k="type" v="multipolygon"/>
   </relation>
   

@@ -10,12 +10,8 @@ module Cover
         @query = proc { |i| [] }
       end
   
-      def query(index, &block)
-        if block_given?
-          @query.call(index).each { |f| yield f }
-        else
-          @query.call(index)
-        end
+      def query(index, options = {}, &block)
+        @query.call(index).each { |f| yield f }
       end
   
     end

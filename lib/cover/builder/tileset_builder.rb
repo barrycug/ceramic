@@ -19,6 +19,10 @@ module Cover
         @tileset.scale = value
       end
 
+      def margin(value)
+        @tileset.margin = value
+      end
+
       def source(type, options = {}, &block)
         klass = case type
         when :proc

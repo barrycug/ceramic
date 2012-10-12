@@ -12,11 +12,13 @@ module Cover
   
     attr_accessor :sources
     attr_accessor :scale
+    attr_accessor :margin
     attr_accessor :writer
   
     def initialize
       @sources = []
       @scale = 1024
+      @margin = 0
       @writer = Writer.new
     end
     
@@ -41,7 +43,7 @@ module Cover
     
       sources.each do |source|
         
-        source.query(index) do |feature|
+        source.query(index, :scale => scale, :margin => margin) do |feature|
           io << "," unless first
           writer.write(feature, io)
           first = false

@@ -81,15 +81,8 @@
         kothicData.granularity = data.scale;
     
         kothicData.features = data.features.map(function(feature) {
-          if (feature.type === "osm") {
-            feature.type = feature.geometry.type;
-            feature.coordinates = feature.geometry.coordinates;
-            feature.properties = feature.tags;
-          } else if (feature.type === "coastline") {
-            feature.type = feature.geometry.type;
-            feature.coordinates = feature.geometry.coordinates;
-            feature.properties = {"natural":"coastline"};
-          }
+          feature.type = feature.geometry.type;
+          feature.coordinates = feature.geometry.coordinates;
           return feature;
         });
     

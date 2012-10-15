@@ -17,7 +17,7 @@ if `psql -qAt --list` !~ /^#{DBNAME}\|/
   
 end
 
-`osm2pgsql --slim --host=/tmp --proj=3857 --database=#{DBNAME} --hstore-all data.osm.xml`
+`osm2pgsql --slim --host=/tmp --proj=3857 --database=#{DBNAME} --hstore data.osm.xml`
 
 
 # Define a tileset

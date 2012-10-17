@@ -1,5 +1,3 @@
-$LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
-
 require "cover/util"
 require "cover/index"
 require "cover/source"

@@ -1,4 +1,5 @@
 require "optparse"
+require "fileutils"
 
 module Cover
   
@@ -20,13 +21,18 @@ module Cover
           }
         
           opts = OptionParser.new do |opts|
-            opts.banner = "Usage: render [options] <config> [indices]"
+            opts.banner = "Usage: render <config> [options] [tile-indices]"
           
             opts.on("-z", "--compress", "Compress output with gzip") do |compress|
               options[:compress] = true
             end
           
-            opts.on("-p", "--path PATH", "Output path format string") do |path|
+            opts.on("-p", "--path PATH", "Output path format string",
+              "  Format specifications:",
+              "    %z -- zoom level",
+              "    %x -- x coordinate",
+              "    %y -- y coordinate",
+              "    %h -- path hash (as in mod_tile)") do |path|
               options[:path] = path
             end
           
@@ -90,7 +96,10 @@ module Cover
           index = Index.new(input)
         
           if @options[:path]
-            File.open(get_tile_path(index), "wb+") do |io|
+            tile_path = build_tile_path(index)
+            
+            FileUtils.mkdir_p(File.dirname(tile_path))
+            File.open(tile_path, "wb+") do |io|
               write_tile_with_index_and_io(index, io)
             end
           else
@@ -105,6 +114,27 @@ module Cover
           else
             @tileset.write(index, io, :compress => @options[:compress])
           end
+        end
+        
+        def build_tile_path(index)
+          path = @options[:path].dup
+          
+          path.gsub!("%z", index.z.to_s)
+          path.gsub!("%x", index.x.to_s)
+          path.gsub!("%y", index.y.to_s)
+          path.gsub!("%h", hash_path(index.z, index.x, index.y))
+          
+          path
+        end
+        
+        def hash_path(z, x, y)
+          hashes = []
+          (0...5).each do |i|
+            hashes[i] = ((x & 0x0f) << 4) | (y & 0x0f)
+            x >>= 4
+            y >>= 4
+          end
+          "#{z}/%u/%u/%u/%u/%u" % hashes.reverse
         end
     
     end

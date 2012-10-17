@@ -23,7 +23,11 @@ module Cover
           opts = OptionParser.new do |opts|
             opts.banner = "Usage: render <config> [options] [tile-indices]"
           
-            opts.on("-z", "--compress", "Compress output with gzip") do |compress|
+            opts.on("-j", "--callback CALLBACK", "JSONP callback function name") do |callback|
+              options[:callback] = callback
+            end
+          
+            opts.on("-c", "--compress", "Compress output with gzip") do |compress|
               options[:compress] = true
             end
           
@@ -110,9 +114,9 @@ module Cover
       
         def write_tile_with_index_and_io(index, io)
           if @options[:metatiles]
-            @tileset.write_metatile(index, io, :compress => @options[:compress], :size => @options[:metatile_size])
+            @tileset.write_metatile(index, io, :compress => @options[:compress], :size => @options[:metatile_size], :callback => @options[:callback])
           else
-            @tileset.write(index, io, :compress => @options[:compress])
+            @tileset.write(index, io, :compress => @options[:compress], :callback => @options[:callback])
           end
         end
         

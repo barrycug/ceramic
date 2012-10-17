@@ -45,6 +45,10 @@ module Cover
         io = Zlib::GzipWriter.new(io, 9)
       end
       
+      if options[:callback]
+        io << "%s(%d,%d,%d," % [options[:callback], index.z, index.x, index.y]
+      end
+      
       io << "{"
       io << "\"scale\":#{scale},"
       io << "\"features\":["
@@ -63,6 +67,10 @@ module Cover
     
       io << "]"
       io << "}"
+      
+      if options[:callback]
+        io << ")"
+      end
       
       if options[:compress]
         io.finish
@@ -103,7 +111,7 @@ module Cover
           
           # Write the tile
           
-          write(tile_index, io, :compress => options[:compress])
+          write(tile_index, io, :compress => options[:compress], :callback => options[:callback])
           
           # Record the size of the tile
           

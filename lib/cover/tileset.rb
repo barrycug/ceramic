@@ -34,7 +34,11 @@ module Cover
       end
     end
   
-    def write(index, io)
+    def write(index, io, options = {})
+      if options[:compress]
+        io = Zlib::GzipWriter.new(io, 9)
+      end
+      
       io << "{"
       io << "\"scale\":#{scale},"
       io << "\"features\":["
@@ -53,6 +57,10 @@ module Cover
     
       io << "]"
       io << "}"
+      
+      if options[:compress]
+        io.finish
+      end
     end
     
     def write_metatile(metatile_index, io, options = {})
@@ -87,11 +95,9 @@ module Cover
           
           tile_position = io.pos
           
-          # Write the tile (gzipped)
+          # Write the tile
           
-          gz = Zlib::GzipWriter.new(io, 9)
-          write(tile_index, gz)
-          gz.finish
+          write(tile_index, io, :compress => options[:compress])
           
           # Record the size of the tile
           

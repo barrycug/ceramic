@@ -1,54 +1,7 @@
 #!/usr/bin/env ruby
 require "rubygems"
 
-$LOAD_PATH << "#{File.dirname(__FILE__)}/../vendor"
 $LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
-require "trollop"
 require "cover"
 
-options = Trollop::options do
-  opt :config, "Configuration file", :type => :string, :required => true
-  opt :tile, "Tile index (<z>/<x>/<y>)", :type => :string
-  opt :metatile, "Metatile index (<z>/<x>/<y>)", :type => :string
-  opt :"metatile-size", "Metatile size", :type => :integer, :default => 8
-end
-
-
-unless (options[:tile] != nil) ^ (options[:metatile] != nil)
-  Trollop::die "must specify either a tile index or a metatile index"
-end
-
-
-if ARGV.any?
-  output_path = ARGV.shift
-else
-  Trollop::die "must specify an output path for the tile"
-end
-
-
-begin
-  tile_index = Cover::Index.new(options[:tile]) if options[:tile]
-rescue ArgumentError
-  Trollop::die "tile indices must be in the form <z>/<x>/<y>"
-end
-
-begin
-  metatile_index = Cover::Index.new(options[:metatile]) if options[:metatile]
-rescue ArgumentError
-  Trollop::die "tile indices must be in the form <z>/<x>/<y>"
-end
-
-
-tileset = eval "Cover::Tileset.build { #{File.read(options[:config])} }"
-
-tileset.setup
-
-File.open(output_path, "wb+") do |f|
-  if tile_index
-    tileset.write(tile_index, f)
-  else
-    tileset.write_metatile(metatile_index, f, :size => options[:"metatile-size"])
-  end
-end
-
-tileset.teardown
+Cover::Commands::Render.run!

@@ -1,3 +1,5 @@
+require "pg"
+
 module Cover
   module Source
     

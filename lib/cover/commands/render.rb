@@ -74,7 +74,7 @@ module Cover
       end
     
       def run
-        @tileset = eval "Cover::Tileset.build { #{File.read(@config)} }"
+        @tileset = Tileset.parse_file(@config)
       
         @tileset.setup
       

@@ -3,6 +3,12 @@ module Cover
   class Tileset
   
     class << self
+      
+      def parse_file(path)
+        src = File.read(path)
+        src.sub!(/^__END__\n.*\Z/m, '')
+        eval "Cover::Tileset.build {\n" + src + "\n}", TOPLEVEL_BINDING, path
+      end
     
       def build(options = {}, &block)
         Builder::TilesetBuilder.build(options, &block)

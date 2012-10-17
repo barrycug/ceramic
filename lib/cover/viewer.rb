@@ -10,16 +10,12 @@ module Cover
     
     set :root, File.dirname(__FILE__) + "/../viewer/"
   
-    def initialize(options = {})
-    
+    def initialize(tileset)
+      
       super()
       
-      @tileset = options[:tileset]
-
-      if options[:center] =~ /(\-?\d+(?:\.\d+)?),(\-?\d+(?:\.\d+)?),(\d+)/
-        @center = [$1, $2, $3]
-      end
-    
+      @tileset = tileset
+      
     end
   
     get "/" do

@@ -112,13 +112,13 @@ SELECT
         WHEN 1 THEN
           ST_Intersection(
             ST_Transform(#{table.geometry_column}, 3857),
-            ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), #{table.geometry_srid})
+            ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857)
           )
         WHEN 2 THEN
           ST_ForceRHR(
             ST_Intersection(
               ST_Buffer(ST_Transform(#{table.geometry_column}, 3857), 0),
-              ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), #{table.geometry_srid})
+              ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857)
             )
           )
         ELSE
@@ -144,13 +144,13 @@ SELECT
       WHEN 1 THEN
         ST_Intersection(
           ST_Transform(#{table.geometry_column}, 4326),
-          ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), #{table.geometry_srid})
+          ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), 4326)
         )
       WHEN 2 THEN
         ST_ForceRHR(
           ST_Intersection(
             ST_Buffer(ST_Transform(#{table.geometry_column}, 4326), 0),
-            ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), #{table.geometry_srid})
+            ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), 4326)
           )
         )
       ELSE

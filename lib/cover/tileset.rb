@@ -51,6 +51,7 @@ module Cover
       
       io << "{"
       io << "\"scale\":#{scale},"
+      io << "\"crs\":null,"
       io << "\"features\":["
     
       first = true

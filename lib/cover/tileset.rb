@@ -52,6 +52,7 @@ module Cover
       end
       
       io << "{"
+      io << "\"type\":\"FeatureCollection\","
       
       if coordinates == :tile
         io << "\"scale\":#{scale},"

@@ -1,0 +1,3 @@
+#!/usr/bin/env ruby
+require "cover"
+Cover::Commands::Server.run!

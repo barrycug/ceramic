@@ -1,11 +1,11 @@
-require File.expand_path("./helper", File.dirname(__FILE__))
+require "helper"
 require "json"
 require "stringio"
 
 class TestTilesetParse < Test::Unit::TestCase
   
   def setup
-    @tileset = Cover::Tileset.parse_file("./fixtures/tileset.rb")
+    @tileset = Cover::Tileset.parse_file(File.dirname(__FILE__) + "/fixtures/tileset.rb")
   end
   
   def test_scale_is_set

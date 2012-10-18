@@ -1,7 +1,0 @@
-#!/usr/bin/env ruby
-require "rubygems"
-
-$LOAD_PATH << "#{File.dirname(__FILE__)}/../lib"
-require "cover"
-
-Cover::Commands::Server.run!

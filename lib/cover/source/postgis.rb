@@ -45,6 +45,7 @@ module Cover
       
       def setup
         @connection = PG.connect(connection_info)
+        @column_types_cache = {}
       end
       
       def teardown
@@ -55,13 +56,19 @@ module Cover
         parameters = build_parameters(index, options)
         
         tables.each do |table|
+          
           if table.zoom.include?(index.z)
             arguments = build_exec_arguments(build_query(table), parameters)
-          
+            
             @connection.exec(*arguments) do |result|
-              result.each { |row| yield build_feature(row, table) }
+              column_types = format_column_types(result)
+              
+              result.each do |row|
+                yield build_feature(row, table, column_types)
+              end
             end
           end
+          
         end
       end
       
@@ -139,9 +146,39 @@ END
           [result, numbered]
         end
         
-        def build_feature(row, table)
-          row.delete_if do |column, value|
-            column == table.geometry_column
+        def build_feature(row, table, column_types)
+          result = {}
+          
+          row.each do |column, value|
+            next if column == table.geometry_column
+            result[column] = type_cast(value, column_types[column])
+          end
+          
+          result
+        end
+        
+        def format_column_types(result)
+          types = {}
+          
+          (0...result.nfields).each do |fnum|
+            fname = result.fname(fnum)
+            pair = [result.ftype(fnum), result.fmod(fnum)]
+            
+            unless @column_types_cache.has_key?(pair)
+              @column_types_cache[pair] = @connection.exec("SELECT format_type($1, $2)", [result.ftype(fnum), result.fmod(fnum)]).getvalue(0, 0)
+            end
+            
+            types[fname] = @column_types_cache[pair]
+          end
+          
+          types
+        end
+        
+        def type_cast(value, type)
+          case type
+          when "integer" then value.to_i
+          when "real"    then value.to_f
+          else value
           end
         end
       

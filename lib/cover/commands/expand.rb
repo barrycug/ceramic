@@ -18,7 +18,7 @@ module Cover
           }
         
           opts = OptionParser.new do |opts|
-            opts.banner = "Usage: cover-expand [options] [indices-or-bboxes]"
+            opts.banner = "Usage: expand [options] [indices-or-bboxes]"
           
             opts.on("-z", "--zoom ZOOM_LEVELS",
               "Comma-separated zoom levels or ranges",
@@ -36,6 +36,11 @@ module Cover
             opts.parse! args
           rescue OptionParser::ParseError => e
             warn e.message
+            abort opts.to_s
+          end
+          
+          if options[:zoom].size < 1
+            warn "must specify one or more zoom levels"
             abort opts.to_s
           end
           

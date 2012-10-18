@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+require "cover"
+
+if ARGV.size < 1
+  abort("command name required")
+end
+
+command = ARGV.shift
+
+case command
+when "expand" then Cover::Commands::Expand.run!
+when "render" then Cover::Commands::Render.run!
+when "server" then Cover::Commands::Server.run!
+else
+  abort("unrecognized command: #{command}")
+end

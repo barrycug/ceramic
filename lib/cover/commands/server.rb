@@ -19,7 +19,7 @@ module Cover
           }
         
           opts = OptionParser.new do |opts|
-            opts.banner = "Usage: cover-server <config> [options]"
+            opts.banner = "Usage: server <config> [options]"
           
             opts.on("-o", "--host HOST", "listen on HOST (default: 0.0.0.0)") { |host|
               options[:Host] = host

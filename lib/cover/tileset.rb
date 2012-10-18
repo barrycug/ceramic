@@ -52,9 +52,9 @@ module Cover
       end
       
       io << "{"
-      io << "\"scale\":#{scale},"
       
       if coordinates == :tile
+        io << "\"scale\":#{scale},"
         io << "\"crs\":null,"
       end
       

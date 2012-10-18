@@ -21,7 +21,7 @@ module Cover
           }
         
           opts = OptionParser.new do |opts|
-            opts.banner = "Usage: render <config> [options] [tile-indices]"
+            opts.banner = "Usage: cover-render <config> [options] [tile-indices]"
           
             opts.on("-j", "--callback CALLBACK", "JSONP callback function name") do |callback|
               options[:callback] = callback

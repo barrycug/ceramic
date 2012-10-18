@@ -18,7 +18,7 @@ module Cover
           }
         
           opts = OptionParser.new do |opts|
-            opts.banner = "Usage: expand [options] [indices-or-bboxes]"
+            opts.banner = "Usage: cover-expand [options] [indices-or-bboxes]"
           
             opts.on("-z", "--zoom ZOOM_LEVELS",
               "Comma-separated zoom levels or ranges",

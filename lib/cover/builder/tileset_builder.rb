@@ -22,6 +22,14 @@ module Cover
       def margin(value)
         @tileset.margin = value
       end
+      
+      def coordinates(value)
+        unless [:tile, :latlon].include?(value)
+          raise ArgumentError, "Unknown coordinate system #{value.inspect}"
+        end
+        
+        @tileset.coordinates = value
+      end
 
       def source(type, options = {}, &block)
         klass = case type

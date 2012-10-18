@@ -58,7 +58,7 @@ module Cover
         tables.each do |table|
           
           if table.zoom.include?(index.z)
-            arguments = build_exec_arguments(build_query(table), parameters)
+            arguments = build_exec_arguments(build_query(table, options), parameters)
             
             @connection.exec(*arguments) do |result|
               column_types = format_column_types(result)
@@ -100,8 +100,11 @@ module Cover
           }
         end
         
-        def build_query(table)
-          <<-END
+        def build_query(table, options = {})
+          
+          if options[:coordinates] == :tile
+            
+            <<-SQL
 SELECT
   ST_AsGeoJSON(
     ST_TransScale(
@@ -109,13 +112,13 @@ SELECT
         WHEN 1 THEN
           ST_Intersection(
             ST_Transform(#{table.geometry_column}, 3857),
-            ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857)
+            ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), #{table.geometry_srid})
           )
         WHEN 2 THEN
           ST_ForceRHR(
             ST_Intersection(
               ST_Buffer(ST_Transform(#{table.geometry_column}, 3857), 0),
-              ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857)
+              ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), #{table.geometry_srid})
             )
           )
         ELSE
@@ -130,7 +133,43 @@ FROM
   #{table.table_expression}
 WHERE
   #{table.geometry_column} && ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), #{table.geometry_srid})
-END
+SQL
+
+          elsif options[:coordinates] == :latlon
+            
+            <<-SQL
+SELECT
+  ST_AsGeoJSON(
+    CASE ST_Dimension(#{table.geometry_column})
+      WHEN 1 THEN
+        ST_Intersection(
+          ST_Transform(#{table.geometry_column}, 4326),
+          ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), #{table.geometry_srid})
+        )
+      WHEN 2 THEN
+        ST_ForceRHR(
+          ST_Intersection(
+            ST_Buffer(ST_Transform(#{table.geometry_column}, 4326), 0),
+            ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), #{table.geometry_srid})
+          )
+        )
+      ELSE
+        ST_Transform(#{table.geometry_column}, 4326)
+    END
+  ) AS geometry,
+  *
+FROM
+  #{table.table_expression}
+WHERE
+  #{table.geometry_column} && ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), #{table.geometry_srid})
+SQL
+
+          else
+            
+            raise ArgumentError, "unknown :coordinates option: #{options[:coordinates]}"
+            
+          end
+          
         end
         
         def build_exec_arguments(query, parameters)

@@ -19,12 +19,14 @@ module Cover
     attr_accessor :sources
     attr_accessor :scale
     attr_accessor :margin
+    attr_accessor :coordinates
     attr_accessor :writer
   
     def initialize
       @sources = []
       @scale = 1024
       @margin = 0
+      @coordinates = :tile
       @writer = Writer.new
     end
     
@@ -51,14 +53,18 @@ module Cover
       
       io << "{"
       io << "\"scale\":#{scale},"
-      io << "\"crs\":null,"
+      
+      if coordinates == :tile
+        io << "\"crs\":null,"
+      end
+      
       io << "\"features\":["
     
       first = true
     
       sources.each do |source|
         
-        source.query(index, :scale => scale, :margin => margin) do |feature|
+        source.query(index, :scale => scale, :margin => margin, :coordinates => coordinates) do |feature|
           io << "," unless first
           writer.write(feature, io)
           first = false

@@ -11,7 +11,6 @@
     
     <article>
       <canvas id="debug" width="576" height="576"></canvas>
-      <canvas id="kothic" width="512" height="512"></canvas>
     </article>
     
     <article>
@@ -24,72 +23,40 @@
     </article>
     
     <script src="/debug_render.js"></script>
-    <script src="/kothic.js"></script>
-    <script src="/osmosnimki.js"></script>
     <script>
     
-      MapCSS.preloadSpriteImage("osmosnimki-maps", "/osmosnimki.png");
-      
-      MapCSS.onImagesLoad = function() {
+      var data = <%= @tile %>;
+      var canvas, context;
     
-        var data = <%= @tile %>;
-        var zoom = <%= params[:z] %>;
-      
-        var canvas, context;
-      
-        // draw with debug renderer
-      
-        canvas = document.getElementById("debug");
-        context = canvas.getContext("2d");
-      
-        DebugRender.renderTile(canvas, data, 32);
-        
-        // draw inset
-        
-        context.beginPath();
-        
-        context.strokeStyle = "rgba(0, 0, 0, 0.2)";
-        context.strokeRect(32 - 0.5, 32 - 0.5, canvas.width - 64, canvas.height - 64);
-        
-      
-        // draw grid
-      
-        var i;
-      
-        context.beginPath();
-      
-        for (i = 4; i < canvas.width; i += 4) {
-          context.moveTo(i - 0.5, 0);
-          context.lineTo(i - 0.5, canvas.height);
-          context.moveTo(0, i - 0.5);
-          context.lineTo(canvas.width, i - 0.5);
-        }
-      
-        context.strokeStyle = "rgba(0, 0, 0, 0.05)";
-        context.stroke();
-      
-        // draw with kothic
-      
-        var kothic = new Kothic({
-          buffered: false,
-          styles: MapCSS.availableStyles,
-          locales: ['be', 'ru', 'en']
-        });
-      
-        var kothicData = {};
-      
-        kothicData.granularity = data.scale;
+      canvas = document.getElementById("debug");
+      context = canvas.getContext("2d");
     
-        kothicData.features = data.features.map(function(feature) {
-          feature.type = feature.geometry.type;
-          feature.coordinates = feature.geometry.coordinates;
-          return feature;
-        });
+      // draw with debug renderer
+      
+      DebugRender.renderTile(canvas, data, { inset: 32 });
+      
+      // draw inset
+      
+      context.beginPath();
+      
+      context.strokeStyle = "rgba(0, 0, 0, 0.2)";
+      context.strokeRect(32 - 0.5, 32 - 0.5, canvas.width - 64, canvas.height - 64);
+      
+      // draw grid
     
-        canvas = document.getElementById("kothic");
-        kothic.render(canvas, kothicData, zoom, function(t) {});
-        
+      var i;
+    
+      context.beginPath();
+    
+      for (i = 4; i < canvas.width; i += 4) {
+        context.moveTo(i - 0.5, 0);
+        context.lineTo(i - 0.5, canvas.height);
+        context.moveTo(0, i - 0.5);
+        context.lineTo(canvas.width, i - 0.5);
       }
+    
+      context.strokeStyle = "rgba(0, 0, 0, 0.05)";
+      context.stroke();
       
     </script>
     

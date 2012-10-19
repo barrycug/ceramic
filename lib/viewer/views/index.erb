@@ -30,6 +30,15 @@
       
       new L.Hash(map);
       
+      var osmLayer = new L.TileLayer("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "Map images and data &copy; OpenStreetMap contributors"
+      });
+      
+      var canvasDebugLayer = new CanvasDebugLayer("/{z}/{x}/{y}");
+      
+      map.addLayer(osmLayer);
+      map.addLayer(canvasDebugLayer);
+      
       var popup = new L.Popup();
       
       map.on("zoomend", function() {
@@ -44,20 +53,11 @@
                     Math.floor(position.y / 256);
                     
         popup.setLatLng(e.latlng);
-        popup.setContent("Inspect tile: <a href=\"/" + index + "/inspect\">" + index + "</a>");
+        popup.setContent("Inspect tile: <a href=\"/" + index + "\">" + index + "</a>");
         
         map.openPopup(popup);
         
       });
-      
-      var osmLayer = new L.TileLayer("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "Map images and data &copy; OpenStreetMap contributors"
-      });
-      
-      var canvasDebugLayer = new CanvasDebugLayer("/{z}/{x}/{y}");
-      
-      map.addLayer(osmLayer);
-      map.addLayer(canvasDebugLayer);
       
     </script>
     

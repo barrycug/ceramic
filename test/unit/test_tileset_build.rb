@@ -5,7 +5,7 @@ require "stringio"
 class TestTilesetBuild < Test::Unit::TestCase
   
   def setup
-    @tileset = Cover::Tileset.build do
+    @tileset = Ceramic::Tileset.build do
       scale 256
       source(:proc) { |index| [ { "id" => 42 }, { "id" => 13 } ] }
     end
@@ -17,7 +17,7 @@ class TestTilesetBuild < Test::Unit::TestCase
   
   def test_query_source
     result = []
-    @tileset.sources.first.query(Cover::Index.new(1, 1, 1)) do |feature|
+    @tileset.sources.first.query(Ceramic::Index.new(1, 1, 1)) do |feature|
       result << feature
     end
     
@@ -26,7 +26,7 @@ class TestTilesetBuild < Test::Unit::TestCase
   
   def test_write_tile
     str = StringIO.new("")
-    @tileset.write(Cover::Index.new(1, 1, 1), str)
+    @tileset.write(Ceramic::Index.new(1, 1, 1), str)
     result = JSON.parse(str.string)
     
     assert_equal 256, result["scale"]

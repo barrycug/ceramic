@@ -1,4 +1,4 @@
-module Cover
+module Ceramic
   
   class Tileset
   
@@ -7,7 +7,7 @@ module Cover
       def parse_file(path)
         src = File.read(path)
         src.sub!(/^__END__\n.*\Z/m, '')
-        eval "Cover::Tileset.build {\n" + src + "\n}", TOPLEVEL_BINDING, path
+        eval "Ceramic::Tileset.build {\n" + src + "\n}", TOPLEVEL_BINDING, path
       end
     
       def build(options = {}, &block)

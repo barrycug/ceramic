@@ -1,4 +1,4 @@
-module Cover
+module Ceramic
   
   class Index
     

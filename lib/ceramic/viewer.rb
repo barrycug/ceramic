@@ -1,10 +1,10 @@
 require "sinatra/base"
-require "cover"
+require "ceramic"
 require "zlib"
 require "stringio"
 require "json"
 
-module Cover
+module Ceramic
 
   class Viewer < Sinatra::Base
     
@@ -48,7 +48,7 @@ module Cover
     protected
     
       def fetch_tile(params)
-        tile_index = Cover::Index.new(params[:z].to_i, params[:x].to_i, params[:y].to_i)
+        tile_index = Ceramic::Index.new(params[:z].to_i, params[:x].to_i, params[:y].to_i)
         
         io = StringIO.new("")
         @tileset.write(tile_index, io)

@@ -2,11 +2,11 @@ libdir = File.dirname(__FILE__) + "/../../lib"
 $LOAD_PATH.unshift libdir unless $LOAD_PATH.include?(libdir)
 
 require "stringio"
-require "cover"
+require "ceramic"
 
 # Set up test database and import the test data
 
-DBNAME = "cover_test"
+DBNAME = "ceramic_test"
 
 if `psql -qAt --list` !~ /^#{DBNAME}\|/
   
@@ -22,7 +22,7 @@ end
 
 # Define a tileset
 
-tileset = Cover::Tileset.build do
+tileset = Ceramic::Tileset.build do
   
   scale 1024
   
@@ -39,7 +39,7 @@ end
 
 tileset.setup
 
-index = Cover::Index.new(8, 128, 127)
+index = Ceramic::Index.new(8, 128, 127)
 str = StringIO.new("")
 tileset.write(index, str)
 

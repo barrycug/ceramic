@@ -1,7 +1,7 @@
 require "optparse"
 require "fileutils"
 
-module Cover
+module Ceramic
   
   module Commands
   

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    cover (0.0.0)
+    ceramic (0.0.0)
       json (~> 1.7.3)
       pg (~> 0.14.1)
       rack (~> 1.4.1)
@@ -25,4 +25,4 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  cover!
+  ceramic!

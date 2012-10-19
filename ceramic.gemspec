@@ -1,10 +1,10 @@
-require File.expand_path("../lib/cover/version", __FILE__)
+require File.expand_path("../lib/ceramic/version", __FILE__)
 
 Gem::Specification.new do |s|
-  s.name        = "cover"
-  s.version     = Cover::VERSION
+  s.name        = "ceramic"
+  s.version     = Ceramic::VERSION
   s.platform    = Gem::Platform::RUBY
-  s.summary     = "Cover"
+  s.summary     = "Ceramic"
   s.description = "Tools for building JSON tiles from OpenStreetMap data"
   s.authors     = ["Mike Daines"]
   s.email       = "mike@mdaines.com"
@@ -14,6 +14,6 @@ Gem::Specification.new do |s|
   s.add_dependency "pg", "~> 0.14.1"
   s.add_dependency "rack", "~> 1.4.1"
   s.add_dependency "sinatra", "~> 1.3.2"
-  s.executables = ["cover"]
-  s.homepage    = "http://github.com/mdaines/cover"
+  s.executables = ["ceramic"]
+  s.homepage    = "http://github.com/mdaines/ceramic"
 end

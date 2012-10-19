@@ -1,6 +1,6 @@
 require "json"
 
-module Cover
+module Ceramic
 
   class Writer
   

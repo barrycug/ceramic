@@ -5,7 +5,7 @@ require "stringio"
 class TestTilesetParse < Test::Unit::TestCase
   
   def setup
-    @tileset = Cover::Tileset.parse_file(File.dirname(__FILE__) + "/fixtures/tileset.rb")
+    @tileset = Ceramic::Tileset.parse_file(File.dirname(__FILE__) + "/fixtures/tileset.rb")
   end
   
   def test_scale_is_set
@@ -14,7 +14,7 @@ class TestTilesetParse < Test::Unit::TestCase
   
   def test_query_source
     result = []
-    @tileset.sources.first.query(Cover::Index.new(1, 1, 1)) do |feature|
+    @tileset.sources.first.query(Ceramic::Index.new(1, 1, 1)) do |feature|
       result << feature
     end
     

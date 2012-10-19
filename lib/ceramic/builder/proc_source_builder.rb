@@ -1,4 +1,4 @@
-module Cover
+module Ceramic
   module Builder
     
     class ProcSourceBuilder

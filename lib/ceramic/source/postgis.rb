@@ -1,6 +1,6 @@
 require "pg"
 
-module Cover
+module Ceramic
   module Source
     
     class PostGIS
@@ -28,7 +28,7 @@ module Cover
           end
           
           if options.has_key?(:zoom)
-            @zoom = Cover::Util.parse_zoom(options[:zoom])
+            @zoom = Ceramic::Util.parse_zoom(options[:zoom])
           else
             @zoom = 0..1.0/0
           end

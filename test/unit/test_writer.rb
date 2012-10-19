@@ -5,7 +5,7 @@ require "stringio"
 class TestWriter < Test::Unit::TestCase
   
   def write_feature(feature)
-    writer = Cover::Writer.new
+    writer = Ceramic::Writer.new
     str = StringIO.new("")
     writer.write(feature, str)
     JSON.parse(str.string)

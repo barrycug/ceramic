@@ -1,6 +1,6 @@
 require "optparse"
 
-module Cover
+module Ceramic
   
   module Commands
   
@@ -63,7 +63,7 @@ module Cover
         tileset.setup
       
         begin
-          Rack::Server.start(@options.merge(:app => Cover::Viewer.new(tileset)))
+          Rack::Server.start(@options.merge(:app => Ceramic::Viewer.new(tileset)))
           
         ensure
           tileset.teardown

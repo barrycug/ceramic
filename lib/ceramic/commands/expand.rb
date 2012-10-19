@@ -1,6 +1,6 @@
 require "optparse"
 
-module Cover
+module Ceramic
   
   module Commands
   

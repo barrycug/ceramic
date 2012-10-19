@@ -1,8 +1,0 @@
-require "cover/util"
-require "cover/index"
-require "cover/source"
-require "cover/builder"
-require "cover/writer"
-require "cover/tileset"
-require "cover/viewer"
-require "cover/commands"

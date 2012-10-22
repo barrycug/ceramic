@@ -43,7 +43,7 @@ module Ceramic
           end
           
           if args.size < 1
-            warn "must specify a config file"
+            warn "must specify a tileset config file"
             abort opts.to_s
           end
           

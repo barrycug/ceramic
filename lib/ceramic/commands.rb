@@ -19,12 +19,14 @@ module Ceramic
         "render" => Ceramic::Commands::Render,
         "server" => Ceramic::Commands::Server
       }
+      
+      command_argument = ARGV.shift
 
-      command = commands.detect do |name, klass|
-        ARGV.first == name
+      selected_command = commands.detect do |name, klass|
+        command_argument == name
       end
 
-      if command.nil?
+      if selected_command.nil?
         puts "Usage: ceramic [-v|--version] <command> [args]"
         puts
         puts "Commands:"
@@ -32,7 +34,7 @@ module Ceramic
         puts "   server   Start a web server which renders tiles on demand"
         puts "   expand   Expand tile indices and bounding boxes"
       else
-        command[1].run!
+        selected_command[1].run!
       end
       
     end

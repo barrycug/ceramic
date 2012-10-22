@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ceramic (0.0.0)
+    ceramic (0.0.1)
       json (~> 1.7.3)
       pg (~> 0.14.1)
       rack (~> 1.4.1)

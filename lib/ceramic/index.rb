@@ -2,8 +2,8 @@ module Ceramic
   
   class Index
     
-    EXTENT = 2 * Math::PI * 6378137
-    ORIGIN = -(EXTENT / 2.0)
+    EXTENT = 2 * Math::PI * 6378137 #:nodoc:
+    ORIGIN = -(EXTENT / 2.0)        #:nodoc:
     
     Bounds = Struct.new(:left, :top, :right, :bottom, :width, :height)
 

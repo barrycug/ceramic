@@ -6,7 +6,7 @@ require "json"
 
 module Ceramic
 
-  class Viewer < Sinatra::Base
+  class Viewer < Sinatra::Base #:nodoc:
     
     set :root, File.dirname(__FILE__) + "/../viewer/"
   

@@ -222,6 +222,8 @@ SQL
           end
         end
         
+        #:nodoc:
+        
         # Adapted from http://engageis.github.com/activerecord-postgres-hstore/
         #
         # Copyright (c) 2009 Juan Maiz

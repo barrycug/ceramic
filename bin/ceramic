@@ -1,16 +1,4 @@
 #!/usr/bin/env ruby
 require "ceramic"
 
-if ARGV.size < 1
-  abort("command name required")
-end
-
-command = ARGV.shift
-
-case command
-when "expand" then Ceramic::Commands::Expand.run!
-when "render" then Ceramic::Commands::Render.run!
-when "server" then Ceramic::Commands::Server.run!
-else
-  abort("unrecognized command: #{command}")
-end
+Ceramic::Commands.run!

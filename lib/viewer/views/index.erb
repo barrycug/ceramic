@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Cover</title>
+    <title>Ceramic</title>
     <link rel="stylesheet" href="leaflet/leaflet.css">
     <style>
       
@@ -24,35 +24,20 @@
     <script src="/leaflet-hash.js"></script>
     <script src="/debug_render.js"></script>
     <script src="/canvas_debug_layer.js"></script>
-    <script src="/kothic.js"></script>
-    <script src="/osmosnimki.js"></script>
-    <script src="/kothic_layer.js"></script>
     <script>
     
-      // Default map options
-      
-      var options = {};
-      
-      <% if @center %>
-        options.zoom = <%= @center[2] %>;
-        options.center = new L.LatLng(
-          <%= @center[0] %>,
-          <%= @center[1] %>
-        );
-      <% else %>
-        options.zoom = 2;
-        options.center = new L.LatLng(0, 0);
-      <% end %>
-      
-      
-      // Set up the map
-      
-      var map = new L.Map("map", options);
+      var map = new L.Map("map", { center: new L.LatLng(0, 0), zoom: 2 });
       
       new L.Hash(map);
       
+      var osmLayer = new L.TileLayer("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "Map images and data &copy; OpenStreetMap contributors"
+      });
       
-      // Inspect popup
+      var canvasDebugLayer = new CanvasDebugLayer("/{z}/{x}/{y}");
+      
+      map.addLayer(osmLayer);
+      map.addLayer(canvasDebugLayer);
       
       var popup = new L.Popup();
       
@@ -62,72 +47,17 @@
       
       map.on("click", function(e) {
         
-        // Get pixel position
-        
         var position = map.project(e.latlng);
-        
-        // Get index path
-        
         var index = map.getZoom() + "/" +
                     Math.floor(position.x / 256) + "/" +
                     Math.floor(position.y / 256);
                     
-        // Display popup
-        
         popup.setLatLng(e.latlng);
-        popup.setContent("Inspect tile: <a href=\"/" + index + "/inspect\">" + index + "</a>");
+        popup.setContent("Inspect tile: <a href=\"/" + index + "\">" + index + "</a>");
         
         map.openPopup(popup);
         
       });
-      
-      
-      // OSM base layer
-      
-      var osm = new L.TileLayer("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "Map images and data &copy; OpenStreetMap contributors"
-      });
-      
-      
-      // Canvas tiles (overlay)
-      
-      var canvasDebugLayer = new CanvasDebugLayer("/{z}/{x}/{y}");
-      
-      
-      // Kothic
-      
-      var kothic = new KothicLayer("/{z}/{x}/{y}", {
-        attribution: "Rendering by <a href=\"http://github.com/kothic/kothic-js\">Kothic JS</a>",
-        zoomOffset: -1,
-        tileSize: 512
-      });
-      
-      
-      // Load MapCSS images for Kothic...
-      
-      MapCSS.preloadSpriteImage("osmosnimki-maps", "osmosnimki.png");
-      
-      
-      // After the MapCSS images load, add the layers and set
-      // up the layer control.
-      
-      MapCSS.onImagesLoad = function() {
-        
-        map.addLayer(osm);
-        map.addLayer(canvasDebugLayer);
-        
-        var layersControl = new L.Control.Layers({
-          "OpenStreetMap": osm,
-          "Kothic": kothic
-        }, {
-          "Debug": canvasDebugLayer
-        }, {
-          collapsed: false
-        });
-
-        map.addControl(layersControl);
-        
-      }
       
     </script>
     

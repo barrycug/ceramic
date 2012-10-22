@@ -1,51 +1,10 @@
-class TargetConfig
-
-  class TargetWriter
+scale 1024
+margin 0.05
   
-    def write_feature(row, io)
-      io << "{"
-      io << "\"geometry\":#{row["way"]},"
-      io << "\"id\":#{row["osm_id"].to_i}"
-      io << "}"
-    end
+source :postgis, :connection_info => { :dbname => "bc" } do
   
-  end
-  
-  def initialize
-    
-    @target_source = Cover::Source::OSM2PGSQL.new(:margin => 0.05) do
-      query :polygon, :simplify => false, :point => false, :order => "way_area DESC" do
-        select [:osm_id], :zoom => "15-", :conditions => "way_area < 10000000"
-      end
-      
-      query :line, :simplify => false, :point => false do
-        select [:osm_id], :zoom => "15-"
-      end
-      
-      query :point do
-        select [:osm_id], :zoom => "15-"
-      end
-    end
-    
-    @target_writer = TargetWriter.new
-    
-    @maker = Cover::Maker.new(:scale => 1024, :pairs => [[@target_source, @target_writer]])
-    
-  end
-  
-  def setup
-    @connection = PG.connect(dbname: ENV["DBNAME"] || "gis")
-    @target_source.connection = @connection
-  end
-  
-  def teardown
-    @connection.close
-  end
-  
-  def maker
-    @maker
-  end
+  table "planet_osm_polygon", :zoom => "15-"
+  table "planet_osm_line", :zoom => "15-"
+  table "planet_osm_point", :zoom => "15-"
   
 end
-
-Cover.config = TargetConfig.new

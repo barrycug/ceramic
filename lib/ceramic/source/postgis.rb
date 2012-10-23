@@ -12,6 +12,29 @@ module Ceramic
         attr_accessor :geometry_srid
         attr_accessor :zoom
         
+        # Creates a new table for the PostGIS source to refer to.
+        # @param [String] table_expression An SQL table expression, which must
+        #   select at least a geometry column. The column's name must match
+        #   the :geometry_column option and the column's SRID must match the
+        #   :geometry_srid option. This can be a subquery (which must have an
+        #   alias), or the name of a table or view. For example:
+        #
+        #     planet_osm_point
+        #     
+        #     planet_osm_line_z10
+        #     
+        #     (SELECT osm_id, way, tags -> 'height' AS height
+        #      FROM planet_osm_polygon
+        #      WHERE building IS NOT NULL AND building <> 'no') AS buildings
+        #     
+        #     (SELECT geometry FROM transport_points) AS transport
+        #
+        # @param [Hash] options
+        # @option options [String] :geometry_column ("way") The name of the geometry column
+        # @option options [Integer] :geometry_srid (900913) The SRID of the geometry column
+        # @option options [String] :zoom (0..Infinity) A zoom specifier, determining the
+        #   zoom levels at which the table is consulted (See {Ceramic::Util.parse_zoom})
+        
         def initialize(table_expression, options = {})
           @table_expression = table_expression
           

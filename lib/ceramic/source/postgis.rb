@@ -155,7 +155,8 @@ SELECT
         )
       ELSE
         ST_Transform(#{table.geometry_column}, 4326)
-    END
+    END,
+  7
   ) AS geometry,
   *
 FROM

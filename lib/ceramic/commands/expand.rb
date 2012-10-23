@@ -18,7 +18,12 @@ module Ceramic
           }
         
           opts = OptionParser.new do |opts|
-            opts.banner = "Usage: expand [options] [indices-or-bboxes]"
+            opts.banner = "Usage: expand [options] [--] [indices-or-bboxes]"
+            
+            opts.separator ""
+            opts.separator "Indices are given as z/x/y"
+            opts.separator "Bounding boxes are given as minlon,minlat,maxlon,maxlat"
+            opts.separator ""
           
             opts.on("-z", "--zoom ZOOM_LEVELS",
               "Comma-separated zoom levels or ranges",
@@ -113,11 +118,14 @@ module Ceramic
         
         def expand_bbox(bbox, zoom)
           
-          left, top = *latlon_to_tile(bbox[2], bbox[1], zoom).map { |c| c.floor.to_i }
-          right, bottom = *latlon_to_tile(bbox[0], bbox[3], zoom).map { |c| c.ceil.to_i }
+          minx, miny = *lonlat_to_tile(bbox[0], bbox[1], zoom).map { |c| c.floor.to_i }
+          maxx, maxy = *lonlat_to_tile(bbox[2], bbox[3], zoom).map { |c| c.ceil.to_i }
           
-          (left...right).each do |x|
-            (top...bottom).each do |y|
+          minx, maxx = maxx, minx if maxx < minx
+          miny, maxy = maxy, miny if maxy < miny
+          
+          (minx...maxx).each do |x|
+            (miny...maxy).each do |y|
               STDOUT << [zoom, x, y].join("/") + "\n"
             end
           end
@@ -126,7 +134,7 @@ module Ceramic
         
         # Note: returns fractional tile numbers
         
-        def latlon_to_tile(lat_deg, lon_deg, zoom)
+        def lonlat_to_tile(lon_deg, lat_deg, zoom)
           lat_rad = (lat_deg / 360.0) * Math::PI * 2.0
           n = 2.0 ** zoom
           x = (lon_deg + 180.0) / 360.0 * n

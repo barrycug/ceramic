@@ -68,7 +68,7 @@ Then, open the debugging map in your browser to verify that the tileset configur
 
     http://localhost:3857/#15/48.4241/-123.3709
   
-Render tiles for the downloaded area. We'll expand tiles indices at zoom level 15 for the area we downloaded, and pipe them into the render subcommand to render each index. The resulting tiles will be saved in a z/x/y directory structure and wrapped a JSONP callback.
+Render tiles for the downloaded area. We'll expand tiles indices at zoom level 15 for the area we downloaded, and pipe them into the `render` subcommand to render each index. The resulting tiles will be saved in a z/x/y directory structure and wrapped a JSONP callback.
 
     $ ceramic expand --zoom 15 -- -123.3956,48.4044,-123.3199,48.4516 | ceramic render victoria.rb --callback tileDidLoad --path ./tiles/%z/%x/%y.json
 

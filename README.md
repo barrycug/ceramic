@@ -3,6 +3,23 @@
 This project provides a set of tools for building GeoJSON map tiles from data in a PostGIS database. It also defines a convention for using GeoJSON to encode geographic data in graphics-oriented applications, like client-side rendering or hit testing.
 
 
+## Installation
+
+Ceramic is a Rubygem which depends on PostGIS. PostGIS can usually be installed with a package manager. If you're running OS X, you can use [Homebrew](http://mxcl.github.com/homebrew):
+
+    $ brew install postgis
+
+Then, install Ceramic:
+
+    $ gem install ceramic
+
+You may also want to install osm2pgsql for importing data from OpenStreetMap. With Homebrew:
+
+    $ brew install --HEAD osm2pgsql
+
+For other systems, see the [osm2pgsql page](http://wiki.openstreetmap.org/wiki/Osm2pgsql) on the OpenStreetMap wiki for installation instructions.
+
+
 ## The `ceramic` Command-Line Tool
 
 The command-line tool has three subcommands:
@@ -17,12 +34,6 @@ To prepare a set of rendered tiles, you'd first use the `server` subcommand to d
 
 
 ## Example: A Tourist Map of Victoria, BC
-
-This example assumes that Ruby, PostGIS, and osm2pgsql are installed. If you're on OS X and you have [Homebrew](http://mxcl.github.com/homebrew), install the `ruby`, `postgis`, and `osm2pgsql` formulae:
-
-    $ brew install ruby
-    $ brew install postgis
-    $ brew install --HEAD osm2pgsql
 
 Create a PostGIS-enabled database:
 

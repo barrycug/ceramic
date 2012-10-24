@@ -85,7 +85,7 @@ Render tiles for the downloaded area. We'll expand tiles indices at zoom level 1
 
 The tiles will look something like this:
 
-    tileDidLoad(15,5152,11329,{"type":"FeatureCollection","features":[{"geometry":{"type":"Point","coordinates":[-123.3950185,48.4444455]},"properties":{"osm_id":"1804301500","tourism":"viewpoint"}}, ... ]})
+    tileDidLoad(15,5152,11329,{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[-123.3950185,48.4444455]},"properties":{"osm_id":"1804301500","tourism":"viewpoint"}}, ... ]})
 
 
 ## Tileset Configuration Files

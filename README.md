@@ -1,6 +1,6 @@
 # Ceramic
 
-This project provides a set of tools for building GeoJSON map tiles from data in a PostGIS database. It also defines a convention for using GeoJSON to encode geographic data in graphics-oriented applications, like client-side rendering or hit testing.
+This project provides a library and set of tools for building GeoJSON map tiles from data in a PostGIS database. It also defines a convention for using GeoJSON to encode geographic data in graphics-oriented applications, like client-side rendering or hit testing.
 
 
 ## Installation
@@ -90,7 +90,13 @@ The tiles will look something like this:
 
 ## Tileset Configuration Files
 
+These use a small DSL for defining a Ceramic::Tileset object. Some examples can be found in [the example/ directory](./example).
 
 
-## The "Tile" Coordinate System
+## Coordinate Conventions
 
+A tileset may use one of two conventions for coordinates, specified by the :latlon and :tile values for the tileset's #coordinates attribute.
+
+When using the :latlon convention, coordinates are given using [the default GeoJSON CRS](http://www.geojson.org/geojson-spec.html#coordinate-reference-system-objects), "a geographic coordinate reference system, using the WGS84 datum, and with longitude and latitude units of decimal degrees".
+
+When using the :tile convention (the default), coordinates are given as spherical mercator meters relative to the top-left of the tile, and scaled to the value of the tileset's #scale attribute. This allows features to be easily drawn with the HTML5 Canvas API, or transformed into SVG.

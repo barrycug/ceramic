@@ -8,6 +8,7 @@ module Ceramic
       
       io << "{"
       
+      io << "\"type\":\"Feature\","
       io << "\"id\":#{feature["id"].to_json}," if feature.has_key?("id")
       io << "\"geometry\":#{feature["geometry"]}," if feature.has_key?("geometry")
       

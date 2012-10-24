@@ -90,7 +90,7 @@ The tiles will look something like this:
 
 ## Tileset Configuration Files
 
-These use a small DSL for defining a Ceramic::Tileset object. Some examples can be found in [the example/ directory](./example).
+These use a small DSL for defining a Ceramic::Tileset object. Some examples can be found in the example/ directory.
 
 
 ## Coordinate Conventions

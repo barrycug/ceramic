@@ -12,7 +12,6 @@ module Ceramic
         attr_accessor :geometry_srid
         attr_accessor :zoom
         
-        # Creates a new table for the PostGIS source to refer to.
         # @param [String] table_expression An SQL table expression, which must
         #   select at least a geometry column. The column's name must match
         #   the :geometry_column option and the column's SRID must match the
@@ -29,7 +28,16 @@ module Ceramic
         #     
         #     (SELECT geometry FROM transport_points) AS transport
         #
-        # @param [Hash] options
+        #   +table_expression+ may also include placeholders, which will be
+        #   substituted before querying the database:
+        #
+        #   - :scale &mdash; The +scale+ option, as passed to {#query}
+        #   - :unit &mdash; The size of one unit in the tile's coordinate system, or the visible width in intersection SRS units divided by the scale.
+        #   - :area &mdash; The area of the tile in intersection SRS units.
+        #   - :srid &mdash; The SRID of the intersection SRS.
+        #   - :view_left, :view_top, :view_bottom, :view_right, :view_width, :view_height &mdash; The visible bounds of the tile in intersection SRS units.
+        #   - :intersect_left, :intersect_top, :intersect_bottom, :intersect_right, :intersect_width, :intersect_height &mdash; The bounds of the intersection area in intersection SRS units.
+        #
         # @option options [String] :geometry_column ("way") The name of the geometry column
         # @option options [Integer] :geometry_srid (900913) The SRID of the geometry column
         # @option options [String] :zoom (0..Infinity) A zoom specifier, determining the
@@ -59,21 +67,38 @@ module Ceramic
         
       end
       
+      # An array of {PostGIS::Table} instances to consult.
+      # @return [Array<PostGIS::Table>]
       attr_accessor :tables
+      
+      # Connection hash or string passed to +PG.connect+.
+      # @return [Hash, String]
       attr_accessor :connection_info
       
       def initialize
         @tables = []
       end
       
+      # Set up this source.
+      # Connects to the Postgres database specified by +connection_info+.
       def setup
         @connection = PG.connect(connection_info)
         @column_types_cache = {}
       end
       
+      # Tear down this source.
+      # Closes the database connection.
       def teardown
         @connection.close
       end
+      
+      # Query each table specified by the objects in +tables+, and yield each feature in the result.
+      # Typecasting is done for integer, real, and hstore types.
+      # @yield [Hash] each feature contained in the bounding box of +index+
+      # @param [Ceramic::Index] index
+      # @option options [Integer] scale See {Ceramic::Tileset#scale}
+      # @option options [Float] margin See {Ceramic::Tileset#margin}
+      # @option options [:tile, :latlon] coordinates See {Ceramic::Tileset#coordinates}
       
       def query(index, options = {}, &block)
         parameters = build_parameters(index, options)

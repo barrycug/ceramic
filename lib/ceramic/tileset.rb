@@ -4,22 +4,39 @@ module Ceramic
   
     class << self
       
+      # Build a tileset instance by evaluating the contents of +path+.
+      # @param [String] path
       def parse_file(path)
         src = File.read(path)
         src.sub!(/^__END__\n.*\Z/m, '')
         eval "Ceramic::Tileset.build {\n" + src + "\n}", TOPLEVEL_BINDING, path
       end
     
+      # Build a tileset instance using the provided block.
       def build(options = {}, &block)
         Builder::TilesetBuilder.build(options, &block)
       end
     
     end
   
+    # An array of sources to consult.
+    # @return [Array]
     attr_accessor :sources
+    
+    # The scale of tiles' features' coordinates, if :tile coordinates are used.
+    # @return [Integer]
     attr_accessor :scale
+    
+    # The fraction of tiles' width to include beyond their visible bounds when doing intersection.
+    # @return [Float]
     attr_accessor :margin
+    
+    # The coordinate convention to use when querying sources.
+    # @return [:tile, :latlon]
     attr_accessor :coordinates
+    
+    # The writer object to use when writing tile features to output. (See {Ceramic::Writer})
+    # @return [#write(Hash, IO)]
     attr_accessor :writer
   
     def initialize
@@ -30,18 +47,26 @@ module Ceramic
       @writer = Writer.new
     end
     
+    # Set up the tileset, calling +#setup+ on each source if it responds.
     def setup
       @sources.each do |source|
         source.setup if source.respond_to?(:setup)
       end
     end
     
+    # Tear down the tileset, calling +#teardown+ on each source if it responds.
     def teardown
       @sources.each do |source|
         source.teardown if source.respond_to?(:teardown)
       end
     end
   
+    # Query each source for the features contained in the bounding box of +index+,
+    # and write the results to +io+ using {#writer}.
+    # @param [Ceramic::Index] index
+    # @param [IO] io
+    # @option options [true, false] :compress Compress the tile with gzip
+    # @option options [String] :callback If present, wrap the tile in a JSONP callback
     def write(index, io, options = {})
       if options[:compress]
         io = Zlib::GzipWriter.new(io, 9)
@@ -85,6 +110,12 @@ module Ceramic
       end
     end
     
+    # Write a mod_tile-compatible metatile to +io+.
+    # @param [Ceramic::Index] metatile_index
+    # @param [IO] io
+    # @option options [Integer] :size (8) The size of the metatile
+    # @option options [true, false] :compress Compress each tile with gzip
+    # @option options [String] :callback If present, wrap each tile in a JSONP callback
     def write_metatile(metatile_index, io, options = {})
       
       size = options[:size] || 8

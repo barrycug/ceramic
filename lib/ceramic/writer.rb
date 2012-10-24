@@ -3,7 +3,13 @@ require "json"
 module Ceramic
 
   class Writer
-  
+    
+    # Write a feature to +io+ as a GeoJSON Feature object.
+    # If present, the +"geometry"+ or +"id"+ members are written to the
+    # top level of the object. Other members are written to the
+    # object's +"properties"+ member.
+    # @param [Hash] feature
+    # @param [IO] io
     def write(feature, io)
       
       io << "{"

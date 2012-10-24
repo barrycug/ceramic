@@ -2,13 +2,16 @@ module Ceramic
   
   class Index
     
-    EXTENT = 2 * Math::PI * 6378137 #:nodoc:
-    ORIGIN = -(EXTENT / 2.0)        #:nodoc:
+    EXTENT = 2 * Math::PI * 6378137
+    ORIGIN = -(EXTENT / 2.0)
     
     Bounds = Struct.new(:left, :top, :right, :bottom, :width, :height)
 
-    attr_reader :z, :x, :y
+    attr_reader :z
+    attr_reader :x
+    attr_reader :y
 
+    # @param arguments A string specfiying a tile index in the form z/x/y, or three integers
     def initialize(*arguments)
       if arguments.size == 1 && String === arguments[0] && arguments[0] =~ /(\d+)\/(\d+)\/(\d+)/
         @z = $1.to_i

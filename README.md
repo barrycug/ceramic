@@ -18,6 +18,12 @@ To prepare a set of rendered tiles, you'd first use the `server` subcommand to d
 
 ## Example: A Tourist Map of Victoria, BC
 
+This example assumes that Ruby, PostGIS, and osm2pgsql are installed. If you're on OS X and you have [Homebrew](http://mxcl.github.com/homebrew), install the `ruby`, `postgis`, and `osm2pgsql` formulae:
+
+    $ brew install ruby
+    $ brew install postgis
+    $ brew install --HEAD osm2pgsql
+
 Create a PostGIS-enabled database:
 
     $ createdb -E UTF8 victoria
@@ -32,25 +38,43 @@ Download data from OpenStreetMap and import it using osm2pgsql:
   
 Make a tileset configuration file:
 
-    $ cat victoria.rb
     coordinates :latlon
     
     source :postgis, :connection_info => { :dbname => "victoria" } do
-      table "(select osm_id, name, amenity, tourism, way from planet_osm_point where amenity is not null or tourism is not null) as points", :geometry_column => "way", :geometry_srid => 3857, :zoom => "15"
-      table "(select osm_id, name, amenity, tourism, ST_Centroid(way) as way from planet_osm_polygon where amenity is not null or tourism is not null) as points", :geometry_column => "way", :geometry_srid => 3857, :zoom => "15"
+    
+      table <<-SQL, :geometry_column => "way", :geometry_srid => 3857, :zoom => "15"
+    (
+      SELECT osm_id, name, amenity, tourism, way
+      FROM planet_osm_point
+      WHERE amenity IS NOT NULL or tourism IS NOT NULL
+    ) AS points
+    SQL
+    
+      table <<-SQL, :geometry_column => "way", :geometry_srid => 3857, :zoom => "15"
+    (
+      SELECT osm_id, name, amenity, tourism, ST_Centroid(way) AS way
+      FROM planet_osm_polygons
+      WHERE amenity IS NOT NULL or tourism IS NOT NULL
+    ) AS centers
+    SQL
+      
     end
 
 To test the config file, start the server:
 
     $ ceramic server victoria.rb
 
-Then, open your browser to:
+Then, open the debugging map in your browser to verify that the tileset configuration works.
 
     http://localhost:3857/#15/48.4241/-123.3709
   
-Finally, render tiles for the downloaded area:
+Render tiles for the downloaded area. We'll expand tiles indices at zoom level 15 for the area we downloaded, and pipe them into the render subcommand to render each index. The resulting tiles will be saved in a z/x/y directory structure and wrapped a JSONP callback.
 
-    $ ceramic expand -z 15 -123.3956,48.4044,-123.3199,48.4516 | ceramic render victoria.rb --path ./tiles/%z/%x/%y.json
+    $ ceramic expand --zoom 15 -- -123.3956,48.4044,-123.3199,48.4516 | ceramic render victoria.rb --callback tileDidLoad --path ./tiles/%z/%x/%y.json
+
+The tiles will look something like this:
+
+    tileDidLoad(15,5152,11329,{"type":"FeatureCollection","features":[{"geometry":{"type":"Point","coordinates":[-123.3950185,48.4444455]},"properties":{"osm_id":"1804301500","tourism":"viewpoint"}}, ... ]})
 
 
 ## Tileset Configuration Files

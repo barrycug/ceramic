@@ -64,7 +64,7 @@ Make a tileset configuration file:
       table <<-SQL, :geometry_column => "way", :geometry_srid => 3857, :zoom => "15"
     (
       SELECT osm_id, name, amenity, tourism, ST_Centroid(way) AS way
-      FROM planet_osm_polygons
+      FROM planet_osm_polygon
       WHERE amenity IS NOT NULL or tourism IS NOT NULL
     ) AS centers
     SQL

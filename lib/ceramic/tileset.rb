@@ -124,7 +124,12 @@ module Ceramic
       my = metatile_index.y
       mz = metatile_index.z
       
-      io << ["META"].pack("a4")
+      if options[:compress]
+        io << ["METZ"].pack("a4")
+      else
+        io << ["META"].pack("a4")
+      end
+      
       io << [size * size, mx, my, mz].pack("l4")
       
       # Record the position where the table of contents will be written

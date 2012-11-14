@@ -135,11 +135,13 @@ module Ceramic
           end
           
         end
+        
       end
       
       private
       
         def build_parameters(index, options = {})
+          
           bounds = index.bounds
           scale = options[:scale]
           margin = options[:margin]
@@ -163,79 +165,51 @@ module Ceramic
             "intersect_width" => [bounds.width + (bounds.width * margin * 2), "float"],
             "intersect_height" => [bounds.height + (bounds.height * margin * 2), "float"]
           }
+          
         end
         
         def build_query(table, options = {})
           
+          wrap_expressions = []
+          
+          wrap_expressions << "SELECT $ AS geometry, * FROM #{table.table_expression} WHERE #{table.geometry_column} && ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), #{table.geometry_srid})"
+          
           if options[:coordinates] == :tile
-            
-            <<-SQL
-SELECT
-  ST_AsGeoJSON(
-    ST_TransScale(
-      CASE ST_Dimension(#{table.geometry_column})
-        WHEN 1 THEN
-          ST_Intersection(
-            ST_Transform(#{table.geometry_column}, 3857),
-            ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857)
-          )
-        WHEN 2 THEN
-          ST_ForceRHR(
-            ST_Intersection(
-              ST_Buffer(ST_Transform(#{table.geometry_column}, 3857), 0),
-              ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857)
-            )
-          )
-        ELSE
-          ST_Transform(#{table.geometry_column}, 3857)
-      END,
-      -:view_left, -:view_top, :scale / :view_width, -:scale / :view_height
-    ),
-    0
-  ) AS geometry,
-  *
-FROM
-  #{table.table_expression}
-WHERE
-  #{table.geometry_column} && ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), #{table.geometry_srid})
-SQL
-
-          elsif options[:coordinates] == :latlon
-            
-            <<-SQL
-SELECT
-  ST_AsGeoJSON(
-    CASE ST_Dimension(#{table.geometry_column})
-      WHEN 1 THEN
-        ST_Intersection(
-          ST_Transform(#{table.geometry_column}, 4326),
-          ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), 4326)
-        )
-      WHEN 2 THEN
-        ST_ForceRHR(
-          ST_Intersection(
-            ST_Buffer(ST_Transform(#{table.geometry_column}, 4326), 0),
-            ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), 4326)
-          )
-        )
-      ELSE
-        ST_Transform(#{table.geometry_column}, 4326)
-    END,
-  7
-  ) AS geometry,
-  *
-FROM
-  #{table.table_expression}
-WHERE
-  #{table.geometry_column} && ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), #{table.geometry_srid})
-SQL
-
+            wrap_expressions << "ST_AsGeoJSON($, 0)"
           else
-            
-            raise ArgumentError, "unknown :coordinates option: #{options[:coordinates]}"
-            
+            wrap_expressions << "ST_AsGeoJSON($, 7)"
           end
           
+          if options[:coordinates] == :tile
+            wrap_expressions << "ST_TransScale($, -:view_left, -:view_top, :scale / :view_width, -:scale / :view_height)"
+          end
+          
+          wrap_expressions << "ST_ForceRHR($)"
+          
+          if options[:coordinates] == :tile
+            wrap_expressions << "ST_Intersection($, ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857))"
+          else
+            wrap_expressions << "ST_Intersection($, ST_Transform(ST_MakeEnvelope(:intersect_left, :intersect_top, :intersect_right, :intersect_bottom, 3857), 4326))"
+          end
+          
+          wrap_expressions << "CASE ST_Dimension(#{table.geometry_column}) WHEN 2 THEN ST_Buffer($, 0) ELSE $ END"
+          
+          if options[:coordinates] == :tile
+            wrap_expressions << "ST_Transform(#{table.geometry_column}, 3857)"
+          else
+            wrap_expressions << "ST_Transform(#{table.geometry_column}, 4326)"
+          end
+          
+          compose_wrap_expressions(wrap_expressions)
+          
+        end
+        
+        def compose_wrap_expressions(wrap_expressions)
+          if wrap_expressions.first.include?("$")
+            wrap_expressions.first.gsub("$", compose_wrap_expressions(wrap_expressions[1..-1]))
+          else
+            wrap_expressions.first
+          end
         end
         
         def build_exec_arguments(query, parameters)

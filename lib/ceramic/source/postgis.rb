@@ -101,6 +101,23 @@ module Ceramic
       # @option options [:tile, :latlon] coordinates See {Ceramic::Tileset#coordinates}
       
       def query(index, options = {}, &block)
+        
+        unless options.has_key?(:coordinates)
+          raise ArgumentError, ":coordinates option must be present"
+        end
+        
+        unless options.has_key?(:margin)
+          raise ArgumentError, ":margin option must be present"
+        end
+        
+        unless [:tile, :latlon].include?(options[:coordinates])
+          raise ArgumentError, ":coordinates option must be :tile or :latlon"
+        end
+        
+        if options[:coordinates] == :tile && !options.has_key?(:scale)
+          raise ArgumentError, ":scale option must be present if :coordinates option is :tile"
+        end
+        
         parameters = build_parameters(index, options)
         
         tables.each do |table|

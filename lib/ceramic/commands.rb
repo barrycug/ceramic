@@ -17,8 +17,7 @@ module Ceramic
       commands = {
         "expand" => Ceramic::Commands::Expand,
         "render" => Ceramic::Commands::Render,
-        "server" => Ceramic::Commands::Server,
-        "tirex"  => Ceramic::Commands::Tirex
+        "server" => Ceramic::Commands::Server
       }
       
       command_argument = ARGV.shift
@@ -34,7 +33,6 @@ module Ceramic
         puts "   render   Render GeoJSON tiles to disk"
         puts "   server   Start a web server which renders tiles on demand"
         puts "   expand   Expand tile indices and bounding boxes"
-        puts "   tirex    Start a Tirex backend (to be invoked by Tirex)"
       else
         selected_command[1].run!
       end

@@ -1,0 +1,39 @@
+#-----------------------------------------------------------------------------
+#
+#  Configuration for amenities map
+#
+#  /etc/tirex/renderer/ceramic/amenities.conf
+#
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+#  General configuration
+#-----------------------------------------------------------------------------
+
+#  symbolic name of this map
+name=amenities
+
+#  tile directory
+tiledir=/var/lib/tirex/tiles/amenities
+
+#  minimum zoom level allowed (default 0)
+minz=15
+
+#  maximum zoom level allowed (default 17)
+maxz=18
+
+#-----------------------------------------------------------------------------
+#  Backend specific configuration
+#-----------------------------------------------------------------------------
+
+# Path to config file
+ceramic_config_path=/var/lib/ceramic/config/amenities.rb
+
+# Write gzip compressed tiles
+ceramic_compress=1
+
+# Use a different metatile size
+#ceramic_metatile_size=4
+
+
+#-- THE END ------------------------------------------------------------------

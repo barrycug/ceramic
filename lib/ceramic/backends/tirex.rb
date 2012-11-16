@@ -20,6 +20,13 @@ module Ceramic
       end
   
       def initialize(options = {})
+        
+        # No configuration?
+        
+        unless ENV.has_key?("TIREX_BACKEND_NAME")
+          puts "No configuration environment variables found. Note that the Tirex backend is meant to be invoked via Tirex, not directly."
+          exit!
+        end
     
         # Read config from environment variables
     

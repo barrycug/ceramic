@@ -24,7 +24,7 @@ module Ceramic
         # No configuration?
         
         unless ENV.has_key?("TIREX_BACKEND_NAME")
-          puts "No configuration environment variables found. Note that the Tirex backend is meant to be invoked via Tirex, not directly."
+          puts "TIREX_BACKEND_NAME configuration environment variable not found. Note that the Tirex backend is meant to be invoked via Tirex, not directly."
           exit!
         end
     

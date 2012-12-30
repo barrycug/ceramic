@@ -73,7 +73,7 @@ module Ceramic
       end
       
       if options[:callback]
-        io << "%s(%d,%d,%d," % [options[:callback], index.z, index.x, index.y]
+        io << "%s({\"x\":%d,\"y\":%d,\"z\":%d,\"geojson\":" % [options[:callback], index.z, index.x, index.y]
       end
       
       io << "{"
@@ -102,7 +102,7 @@ module Ceramic
       io << "}"
       
       if options[:callback]
-        io << ")"
+        io << "})"
       end
       
       if options[:compress]

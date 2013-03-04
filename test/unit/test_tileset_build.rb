@@ -1,6 +1,4 @@
 require "helper"
-require "json"
-require "stringio"
 
 class TestTilesetBuild < Test::Unit::TestCase
   

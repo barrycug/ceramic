@@ -32,16 +32,26 @@ module Ceramic
       end
 
       def source(type, options = {}, &block)
-        klass = case type
-        when :proc
-          ProcSourceBuilder
-        when :postgis
-          PostGISSourceBuilder
+        source = if type.is_a?(Class)
+          unless type.method_defined?(:query)
+            raise ArgumentError, "Source classes must define #query"
+          end
+          type.new(options)
+        elsif type.is_a?(Symbol)
+          klass = case type
+          when :proc
+            ProcSourceBuilder
+          when :postgis
+            PostGISSourceBuilder
+          when Symbol
+            raise ArgumentError, "Unknown source type #{type.inspect}"
+          end
+          klass.build(options, &block)
         else
-          raise ArgumentError, "Unknown source type #{type.inspect}"
+          raise ArgumentError, "Sources must be specified as either a symbol (:postgis, :proc) or a source class"
         end
-    
-        @tileset.sources << klass.build(options, &block)
+        
+        @tileset.sources << source
       end
 
     end

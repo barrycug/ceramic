@@ -15,14 +15,23 @@ module Ceramic
         @tileset = Tileset.new
       end
 
+      # Specify the tileset's scale.
+      # @param [Integer] value
+      # @see Ceramic::Tileset#scale
       def scale(value)
         @tileset.scale = value
       end
 
+      # Specify the tileset's margin.
+      # @param [Float] value
+      # @see Ceramic::Tileset#margin
       def margin(value)
         @tileset.margin = value
       end
       
+      # Specify the tileset's coordinate system.
+      # @param [:tile, :latlon] value
+      # @see Ceramic::Tileset#coordinates
       def coordinates(value)
         unless [:tile, :latlon].include?(value)
           raise ArgumentError, "Unknown coordinate system #{value.inspect}"
@@ -31,6 +40,9 @@ module Ceramic
         @tileset.coordinates = value
       end
 
+      # Add a source to the tileset's list of sources.
+      # @param [Class, Symbol] type
+      # @see Ceramic::Tileset#sources
       def source(type, options = {}, &block)
         source = if type.is_a?(Class)
           unless type.method_defined?(:query)

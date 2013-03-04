@@ -13,6 +13,7 @@ module Ceramic
       end
     
       # Build a tileset instance using the provided block.
+      # @see Ceramic::Builder::TilesetBuilder
       def build(options = {}, &block)
         Builder::TilesetBuilder.build(options, &block)
       end
@@ -35,8 +36,9 @@ module Ceramic
     # @return [:tile, :latlon]
     attr_accessor :coordinates
     
-    # The writer object to use when writing tile features to output. (See {Ceramic::Writer})
+    # The writer object to use when writing tile features to output.
     # @return [#write(Hash, IO)]
+    # @see Ceramic::Writer
     attr_accessor :writer
   
     def initialize

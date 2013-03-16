@@ -2,6 +2,11 @@ module Ceramic
   module Builder
 
     class TilesetBuilder
+      
+      SOURCE_BUILDER_TYPES = {
+        :proc => ProcSourceBuilder,
+        :postgis => PostGISSourceBuilder,
+      }
   
       class << self
         def build(options = {}, &block)
@@ -50,15 +55,10 @@ module Ceramic
           end
           type.new(options)
         elsif type.is_a?(Symbol)
-          klass = case type
-          when :proc
-            ProcSourceBuilder
-          when :postgis
-            PostGISSourceBuilder
-          when Symbol
+          unless SOURCE_BUILDER_TYPES.has_key?(type)
             raise ArgumentError, "Unknown source type #{type.inspect}"
           end
-          klass.build(options, &block)
+          SOURCE_BUILDER_TYPES[type].build(options, &block)
         else
           raise ArgumentError, "Sources must be specified as either a symbol (:postgis, :proc) or a source class"
         end

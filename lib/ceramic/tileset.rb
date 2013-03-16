@@ -34,7 +34,16 @@ module Ceramic
     
     # The coordinate convention to use when querying sources.
     # @return [:tile, :latlon]
-    attr_accessor :coordinates
+    attr_reader :coordinates
+    
+    # Set the coordinate convention to use when querying sources.
+    # @param [:tile, :latlon] coordinates
+    def coordinates=(coordinates)
+      unless [:tile, :latlon].include?(coordinates)
+        raise ArgumentError, "Unknown coordinate system #{coordinates.inspect}"
+      end
+      @coordinates = coordinates
+    end
     
     # The writer object to use when writing tile features to output.
     # @return [#write(Hash, IO)]

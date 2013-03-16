@@ -38,10 +38,6 @@ module Ceramic
       # @param [:tile, :latlon] value
       # @see Ceramic::Tileset#coordinates
       def coordinates(value)
-        unless [:tile, :latlon].include?(value)
-          raise ArgumentError, "Unknown coordinate system #{value.inspect}"
-        end
-        
         @tileset.coordinates = value
       end
 

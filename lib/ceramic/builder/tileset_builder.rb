@@ -50,9 +50,6 @@ module Ceramic
       # @see Ceramic::Tileset#sources
       def source(type, options = {}, &block)
         source = if type.is_a?(Class)
-          unless type.method_defined?(:query)
-            raise ArgumentError, "Source classes must define #query"
-          end
           type.new(options)
         elsif type.is_a?(Symbol)
           unless SOURCE_BUILDER_TYPES.has_key?(type)
